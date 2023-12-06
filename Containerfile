@@ -38,5 +38,6 @@ WORKDIR /project
 
 COPY --from=cmdstan /cmdstan/hmm .
 COPY --from=cmdstan /cmdstan/stan/lib/stan_math/lib/tbb/libtbb.so.2 /usr/local/lib/libtbb.so.2
+COPY R/hmm.R .
 
 CMD Rscript hmm.R --stan-file=hmm --output data/fit.rds data/model_data.rds
