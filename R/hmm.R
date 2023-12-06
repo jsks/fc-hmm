@@ -5,14 +5,14 @@ library(docopt)
 library(dplyr)
 library(tools)
 
-options(mc.cores = parallel::detectCores())
+options(mc.cores = 4)
 
 doc <- "Fit a hidden markov model to the merged conflict data.
 
 Usage: hmm.R [--stan-file=<file>] [--output=<file>] <input-data>
 
 Options:
-    --stan-file=<file>  Stan file [default: hmm.stan]
+    --stan-file=<file>  Stan file [default: stan/hmm.stan]
     --output=<file>     Output file [default: fit.rds]"
 
 arguments <- docopt(doc)
