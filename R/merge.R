@@ -86,6 +86,7 @@ reduced.df <- group_by(full.df, conflict_id) |>
 
 # Expand out the full grid, so that we also include conflict-years where BRD == 0
 seqs <- group_by(reduced.df, conflict_id) |>
+    arrange(year) |>
     summarise(start = min(year),
               stop = ifelse(last(terminated) == 1, max(year), 2021))
 
@@ -135,7 +136,7 @@ stopifnot(!is.na(merge.df$tiv))
 ###
 # Finally merge with V-Dem
 vdem <- readRDS("./data/V-Dem-CY-Full+Others-v14.rds") |>
-    select(country_name, year, v2x_polyarchy, e_area, e_pop, e_gdppc) |>
+    select(country_name, year, v2x_polyarchy, e_pop, e_gdppc) |>
     mutate(country_name =
                case_when(country_name ==  "Burma/Myanmar" ~ "Myanmar",
                          country_name == "Yemen" ~ "North Yemen",
@@ -168,4 +169,4 @@ model_data <- left_join(q, ceasefires, by = c("conflict_id", "year")) |>
     mutate(ceasefire = ifelse(is.na(ceasefire), 0, 1)) |>
     arrange(conflict_id, year)
 
-saveRDS(model_data, "./data/merge.rds")
+saveRDS(model_data, "./data/model_data.rds")
