@@ -1,0 +1,17 @@
+data/
+stan/*
+!stan/*.stan
+
+.\#*
+.Rhistory
+.token.gpg
+
+*.RData
+*.rda
+*.rds
+*.dta
+*.sav
+
+*.tar.gz
+*.zip
+*.zst
