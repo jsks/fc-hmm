@@ -3,13 +3,11 @@ data {
   int K; // Number of latent states
 
   int D; // Dimensions for transition model covariates
-  int M; // Dimensions for observation model covariates
 
   int n_conflicts;                        // Number of conflicts
   array[n_conflicts] int conflict_ends;   // Ending index position for each conflict
   array[n_conflicts] int conflict_starts; // Starting index position for each conflict
 
-  matrix[N, M] W;          // Observation model covariates
   matrix[N, D] X;          // Transition model covariates
   array[N] int<lower=0> y; // Emissions (ie BRD)
 }
@@ -20,7 +18,7 @@ parameters {
 
   // Partially pooled varying negative binomial rates
   array[n_conflicts] vector[K] eta_raw;
-  vector[K] lambda;
+  ordered[K] lambda;
   vector<lower=0>[K] tau;
 
   // Partially pooled varying transition intercepts
@@ -30,9 +28,9 @@ parameters {
 }
 
 transformed parameters {
-  matrix[N, K] Gamma;
+  array[N] vector[K] Gamma;
 
-  array[n_conflicts] ordered[K] eta;
+  array[n_conflicts] vector[K] eta;
   array[n_conflicts] matrix[K, K] alpha;
 
   {
@@ -43,8 +41,8 @@ transformed parameters {
       // alpha_{conflict} ~ normal(mu, sigma)
       alpha[conflict] = mu + sigma .* alpha_raw[conflict];
 
-      int end = conflict_ends[conflict];
-      int start = conflict_starts[conflict];
+      int start = conflict_starts[conflict],
+          end = conflict_ends[conflict];
 
       // Initial state probabilities
       for (i in 1:K)
@@ -56,12 +54,9 @@ transformed parameters {
           for (j in 1:K)
             nu[j] = alpha[conflict, j, i] + X[t, ] * beta[j, i];
 
-          // Log simplex of time-varying transition probabilities
-          vector[K] lp = log_softmax(nu);
-
           // Log-likelihoods for y_t when transitioning to state i
-          vector[K] aux = Gamma[t-1, ]' + lp + neg_binomial_2_log_lpmf(y[t] | eta[conflict, i], phi);
-          Gamma[t, i] = log_sum_exp(aux);
+          Gamma[t, i] = log_sum_exp(Gamma[t-1] + log_softmax(nu) +
+                                    neg_binomial_2_log_lpmf(y[t] | eta[conflict, i], phi));
         }
       }
     }
@@ -77,18 +72,51 @@ model {
       target += normal_lpdf(beta[i, j] | 0, 2.5);
   }
 
-  for (i in 1:n_conflicts) {
-    target += std_normal_lpdf(to_vector(eta_raw[i]));
-    target += normal_lpdf(lambda[1] | 0, 1);
-    target += normal_lpdf(lambda[2] | 10, 5);
-    target += normal_lpdf(tau | 0, 0.5);
+  target += normal_lpdf(lambda[1] | 0, 1);
+  target += normal_lpdf(lambda[2] | 10, 5);
+  target += normal_lpdf(tau | 0, 0.5);
 
-    target += std_normal_lpdf(to_vector(alpha_raw[i]));
-    target += normal_lpdf(to_vector(mu) | 0, 1);
-    target += normal_lpdf(to_vector(sigma) | 0, 0.5);
+  target += normal_lpdf(to_vector(mu) | 0, 1);
+  target += normal_lpdf(to_vector(sigma) | 0, 0.5);
+
+  for (conflict in 1:n_conflicts) {
+    target += std_normal_lpdf(to_vector(eta_raw[conflict]));
+    target += std_normal_lpdf(to_vector(alpha_raw[conflict]));
   }
 
   // Likelihood
-  for (i in 1:n_conflicts)
-      target += log_sum_exp(Gamma[conflict_ends[i], ]);
+  for (conflict in 1:n_conflicts)
+      target += log_sum_exp(Gamma[conflict_ends[conflict]]);
+}
+
+generated quantities {
+  array[N] vector[K] Gamma_backward;
+  {
+    for (conflict in 1:n_conflicts) {
+      int start = conflict_starts[conflict],
+        end = conflict_ends[conflict];
+
+      for (i in 1:K)
+        Gamma_backward[end, i] = 0;
+
+      // Stan doesn't support reverse iteration :(
+      for (t in 1:(end - start)) {
+        int idx = end - t;
+
+        for (i in 1:K) {
+          vector[K] nu;
+          for (j in 1:K)
+            nu[j] = alpha[conflict, i, j] + X[idx, ] * beta[i, j];
+
+          Gamma_backward[idx, i] = log_sum_exp(Gamma_backward[idx+1] +
+                                               log_softmax(nu) +
+                                               neg_binomial_2_log_lpmf(y[idx+1] | eta[conflict, i], phi));
+        }
+      }
+    }
+  }
+
+  array[N] vector[K] Z_star;
+  for (i in 1:N)
+    Z_star[i] = softmax(Gamma[i] + Gamma_backward[i]);
 }
