@@ -5,7 +5,7 @@ library(docopt)
 library(dplyr)
 library(tools)
 
-options(mc.cores = 4)
+options(mc.cores = 8)
 
 doc <- "Fit a hidden markov model to the merged conflict data.
 
@@ -40,7 +40,8 @@ X <- select(df, ceasefire, tiv, v2x_polyarchy, e_gdppc, duration) |>
     mutate(duration = log(duration) |> normalize(),
            tiv = normalize(tiv),
            e_gdppc = log(e_gdppc) |> normalize(),
-           v2x_polyarchy = normalize(v2x_polyarchy))
+           v2x_polyarchy = normalize(v2x_polyarchy)) |>
+    select(tiv, everything())
 
 # Starts, ends for each conflict sequence
 conflicts <- mutate(df, row = row_number()) |>
@@ -67,7 +68,7 @@ if (!file.exists(sf <- arguments$stan_file))
     stop("Invalid stan file: ", sf)
 
 mod <- if (file_ext(sf) == "stan") cmdstan_model(sf) else cmdstan_model(exe_file = sf)
-fit <- mod$sample(data = data, chains = 4, adapt_delta = 0.95, max_treedepth = 12)
+fit <- mod$sample(data = data, chains = 8, adapt_delta = 0.95, max_treedepth = 12)
 
 # Save, save, save!
 fit$save_object(arguments$output)
