@@ -8,7 +8,8 @@ library(readxl)
 library(tidyr)
 
 ###
-# SIPRI - Arms Transfer Dataset
+# SIPRI - Arms Transfer Dataset (1950 - 2023)
+fns <- lapply(1:4, \(i) function(...) lag(..., n=i))
 tiv <- read.csv("./data/import-export-values_1950-2023.csv", skip = 9) |>
     select(Recipient, matches("^X\\d{4}$")) |>
     pivot_longer(cols = -Recipient, names_to = "year", values_to = "tiv") |>
@@ -16,6 +17,10 @@ tiv <- read.csv("./data/import-export-values_1950-2023.csv", skip = 9) |>
            tiv = case_when(tiv ==  0 ~ 0.5,
                            is.na(tiv) ~ 0,
                            T ~ tiv)) |>
+    group_by(Recipient) |>
+    arrange(year) |>
+    mutate(across(tiv, .fns = fns, .names = "{.col}_{.fn}")) |>
+    ungroup() |>
     filter(between(year, 1989, 2021))
 
 ###
