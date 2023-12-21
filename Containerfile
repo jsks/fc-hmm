@@ -21,9 +21,11 @@ COPY etc/stan/local /cmdstan/make/local
 COPY stan/hmm.stan .
 RUN make -j$(nproc) hmm && \
     patchelf --set-rpath /usr/local/lib hmm && \
-    strip -s hmm
+    strip -s hmm stan/lib/stan_math/lib/tbb/libtbb.so.2
 
 FROM base
+
+ENV _R_SHLIB_STRIP_=TRUE
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends r-base-core && \
