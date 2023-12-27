@@ -57,7 +57,9 @@ data <- list(N = nrow(df),
              conflict_starts = conflicts$start,
              conflict_ends = conflicts$end,
              X = data.matrix(X),
-             y = df$brd)
+             y = df$brd,
+             lambda_location = c(0, 6.2),
+             lambda_scale = c(1, 1))
 str(data)
 stopifnot(!anyNA(data))
 
