@@ -29,6 +29,7 @@ if (!file.exists(arguments$input_data))
     stop("Invalid input file: ", arguments$input_data)
 
 df <- readRDS(arguments$input_data) |>
+    filter(high_intensity) |>
     group_by(conflict_id) |>
     arrange(year) |>
     mutate(duration = 1:n()) |>
@@ -36,12 +37,14 @@ df <- readRDS(arguments$input_data) |>
     arrange(conflict_id, year)
 
 # Time-varying covariates affecting transition probabilities.
-X <- select(df, ceasefire, tiv, v2x_polyarchy, e_gdppc, duration) |>
-    mutate(duration = log(duration) |> normalize(),
+X <- select(df, tiv, ceasefire, pko, ongoing, v2x_polyarchy, e_gdppc, duration) |>
+    mutate(duration = normalize(duration),
+           duration2 = normalize(duration^2),
+           duration3 = normalize(duration^3),
            tiv = normalize(tiv),
            e_gdppc = log(e_gdppc) |> normalize(),
-           v2x_polyarchy = normalize(v2x_polyarchy)) |>
-    select(tiv, everything())
+           v2x_polyarchy = normalize(v2x_polyarchy))
+stopifnot(!anyNA(X))
 
 # Starts, ends for each conflict sequence
 conflicts <- mutate(df, row = row_number()) |>
