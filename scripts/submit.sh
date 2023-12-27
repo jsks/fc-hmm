@@ -22,7 +22,7 @@ proj='~/storage/'
 model_run="$(date +'%F-%s')-$1"
 job_script="${1}.sh"
 
-[[ ! -f $job_script ]] && error "Cannot find associated files for $1"
+[[ ! -f scripts/$job_script ]] && error "Cannot find job submission file for $1"
 
 print "Running $1"
 print "Model run directory: ${proj}/${model_run}"
