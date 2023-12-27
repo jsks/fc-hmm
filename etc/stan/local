@@ -1,2 +1,4 @@
+CXXFLAGS += -march=x86-64-v2 -mtune=intel -Wno-deprecated-declarations
+STAN_THREADS=true
 STAN_CPP_OPTIMS=true
 STAN_NO_RANGE_CHECKS=true
