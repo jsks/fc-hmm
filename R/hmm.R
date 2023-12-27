@@ -30,10 +30,6 @@ if (!file.exists(arguments$input_data))
 
 df <- readRDS(arguments$input_data) |>
     filter(high_intensity) |>
-    group_by(conflict_id) |>
-    arrange(year) |>
-    mutate(duration = 1:n()) |>
-    ungroup() |>
     arrange(conflict_id, year)
 
 # Time-varying covariates affecting transition probabilities.

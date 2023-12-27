@@ -99,6 +99,7 @@ final.df <- full_join(reduced.df, grid, by = c("conflict_id", "year")) |>
            brd_low = replace_na(brd_low, 0),
            brd_high = replace_na(brd_high, 0),
            total = cumsum(brd),
+           duration = 1:n(),
            side_a = first(side_a, na_rm = T),
            side_b = first(side_b, na_rm = T),
            full_pax = replace_na(full_pax, 0),
