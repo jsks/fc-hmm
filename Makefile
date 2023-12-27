@@ -33,13 +33,10 @@ help:
 			'{ printf "\t$(blue)%-10s $(white)%s$(reset)\n", $$1, $$2 }'
 	@printf '\n'
 
-push: build ## Push the Stan model container image to GitHub Container Registry
+push: ## Push the Stan model container image to GitHub Container Registry
 	gpg -q -d $(token) | podman login ghcr.io --username jsks --password-stdin
 	podman push ghcr.io/jsks/hmm:latest
 	podman push ghcr.io/jsks/sbc:latest
-
-run: data/model_data.rds ## Run the Stan model container image on tetralith
-	scripts/submit.sh data/model_data.rds
 
 wc: ## Rough estimate of word count for manuscript
 	@printf '$(manuscript): '
@@ -47,10 +44,6 @@ wc: ## Rough estimate of word count for manuscript
 
 ###
 # Data prep
-data/conflicts.rds: $(raw)/UcdpPrioConflict_v23_1.rds \
-			R/conflicts.R
-	Rscript R/conflicts.R
-
 data/sequences.rds: $(raw)/ucdp-peace-agreements-221.xlsx \
 			$(raw)/ucdp-term-acd-3-2021.xlsx \
 			$(raw)/GEDEvent_v23_1.rds \
@@ -66,12 +59,12 @@ data/model_data.rds: data/sequences.rds \
 			R/merge.R
 	Rscript R/merge.R
 
+###
+# Manuscript targets
 $(foreach ext, pdf docx html, $(manuscript:%.qmd=%.$(ext))): \
 	data/model_data.rds \
 	fit.rds
 
-###
-# Implicit rules for pdf and html generation
 %.docx: %.qmd
 	quarto render $< --to docx
 
