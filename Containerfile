@@ -2,14 +2,12 @@
 # final image. Output is two separate images for each HPC job.
 #
 # 1. Build CmdStan and compile Stan files
-# 2. R + package dependencies
-# 3. Two final images:
-#      - HMM image
-#      - SBC image
+# 2. SBC image
+# 3. HMM image
 ###
 
 # Compile Stan models
-FROM debian:testing-slim AS cmdstan
+FROM debian:12 AS cmdstan
 
 ARG CMDSTAN_VERSION=2.34.1
 
@@ -28,41 +26,26 @@ WORKDIR /cmdstan
 
 COPY etc/stan/local /cmdstan/make/local
 COPY stan/*.stan .
-RUN make -j$(nproc) hmm sim && \
-    patchelf --set-rpath /usr/local/lib hmm sim && \
-    strip -s hmm sim stan/lib/stan_math/lib/tbb/libtbb.so.2
 
-FROM debian:testing-slim AS R
-
-ENV _R_SHLIB_STRIP_=TRUE
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends build-essential r-base-core && \
-    rm -rf /var/lib/apt/lists/*
-
-RUN Rscript -e "install.packages(c('docopt', 'dplyr', 'cmdstanr'), \
-                                 repos = c('https://mc-stan.org/r-packages/', \
-                                           getOption('repos')), \
-                                 Ncpus = parallel::detectCores())"
-
-RUN mkdir -p /project/data
-WORKDIR /project
-
-# Hidden markov model image
-FROM R AS hmm
-
-COPY --from=cmdstan /cmdstan/hmm .
-COPY --from=cmdstan /cmdstan/stan/lib/stan_math/lib/tbb/libtbb.so.2 /usr/local/lib/libtbb.so.2
-COPY R/hmm.R .
-
-CMD Rscript hmm.R --stan-file=hmm --output data/fit.rds data/model_data.rds
+RUN STANCFLAGS="--include-paths /cmdstan" make -j$(nproc) bin/diagnose hmm sbc && \
+    patchelf --set-rpath / hmm sbc && \
+    strip -s bin/diagnose hmm sbc stan/lib/stan_math/lib/tbb/libtbb.so.2
 
 # Simulation based calibration image
-FROM R AS sbc
+FROM gcr.io/distroless/cc-debian12 AS sbc
 
-COPY --from=cmdstan /cmdstan/sim .
+COPY --from=cmdstan /cmdstan/bin/diagnose .
+COPY --from=cmdstan /cmdstan/sbc .
+COPY --from=cmdstan /cmdstan/stan/lib/stan_math/lib/tbb/libtbb.so.2 libtbb.so.2
+COPY json/sim.json .
+
+ENTRYPOINT ["/sbc", "data", "file=/sim.json", "sample"]
+
+# Hidden markov model image
+FROM gcr.io/distroless/cc-debian12 AS hmm
+
 COPY --from=cmdstan /cmdstan/hmm .
-COPY --from=cmdstan /cmdstan/stan/lib/stan_math/lib/tbb/libtbb.so.2 /usr/local/lib/libtbb.so.2
-COPY R/sbc.R .
+COPY --from=cmdstan /cmdstan/stan/lib/stan_math/lib/tbb/libtbb.so.2 libtbb.so.2
+COPY json/hmm.json .
 
-CMD Rscript sbc.R
+ENTRYPOINT ["/hmm", "data", "file=/hmm.json", "sample"]
