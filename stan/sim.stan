@@ -6,11 +6,11 @@ data {
     matrix[N, D] X;
 
     int n_conflicts;
-    array[n_conflicts] int<lower=1, upper=N> conflict_start; // Start of each conflict
-    array[n_conflicts] int<lower=1, upper=N> conflict_end; // End of each conflict
+    array[n_conflicts] int<lower=1, upper=N> conflict_starts; // Start of each conflict
+    array[n_conflicts] int<lower=1, upper=N> conflict_ends; // End of each conflict
 
-    array[K] real lambda_location; // Log-mean prior
-    array[K] real lambda_scale;    // Standard deviation of log-mean prior
+    array[K] real mu_location; // Log-mean prior
+    array[K] real<lower=0> mu_scale;    // Standard deviation of log-mean prior
 }
 
 generated quantities {
@@ -18,10 +18,19 @@ generated quantities {
     simplex[K] pi = dirichlet_rng(rep_vector(1, K));
 
     // Log-mean of negative binomial
-    vector[K] lambda;
-    for (i in 1:K)
-        lambda[i] = normal_rng(lambda_location[i], lambda_scale[i]);
-    lambda = sort_asc(lambda);
+    vector[K] mu;
+    vector<lower=0>[K] tau;
+    for (i in 1:K) {
+        mu[i] = normal_rng(mu_location[i], mu_scale[i]);
+        tau[i] = abs(normal_rng(0, 0.5));
+    }
+    mu = sort_asc(mu);
+
+    array[n_conflicts] vector[K] eta;
+    for (conflict in 1:n_conflicts) {
+        for (i in 1:K)
+            eta[conflict, i] = normal_rng(mu[i], tau[i]);
+    }
 
     // Dispersion parameter for negative binomial
     real<lower=0> phi = gamma_rng(2, 0.1);
@@ -45,18 +54,18 @@ generated quantities {
     array[N] int S;
     {
         for (conflict in 1:n_conflicts) {
-            int start = conflict_start[conflict],
-                end = conflict_end[conflict];
+            int start = conflict_starts[conflict],
+                end = conflict_ends[conflict];
 
             S[start] = categorical_rng(pi);
-            y[start] = neg_binomial_2_log_rng(lambda[S[start]], phi);
+            y[start] = neg_binomial_2_log_rng(eta[conflict,S[start]], phi);
 
             for (t in (start + 1):end) {
                 // K x D \times D x 1 -> K x 1
                 vector[K] p = softmax(nu[, S[t-1]] + beta[S[t-1]] * X[t, ]');
 
                 S[t] = categorical_rng(p);
-                y[t] = neg_binomial_2_log_rng(lambda[S[t]], phi);
+                y[t] = neg_binomial_2_log_rng(eta[conflict,S[t]], phi);
             }
         }
     }
