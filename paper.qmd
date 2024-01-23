@@ -38,6 +38,8 @@ abstract: |
     frozen conflicts. __Word Count__: 2715
 ---
 
+Moving beyond operationalizing conflict episodes as discrete events separated by drops below an arbitrary threshold in the number of battle related fatalities.
+
 A key feature of frozen conflicts is an ongoing risk for violent thawing. By definition, frozen conflicts feature an underlying incompatibility that remains unresolved, which can serve as a catalyst for future violence [@smetana_between_2019]. Despite this risk being present across all frozen conflicts, there is nonetheless substantial variation in terms of if and when frozen conflicts do escalate, and potentially re-freeze. Some conflicts will undergo multiple waves of escalation and de-escalation, whereby the conflict swings between being frozen and active. For example, the previous dispute over Nagorno-Karabakh in Azerbaijan featured a high intensity war in the early 1990s during the breakdown of the Soviet Union followed by a long period of being frozen with brief, sporadic incidences of violence until the full-blown reignition of the Second Nagorno-Karabakh War in 2020. This was followed by yet another ceasefire, and the de-escalation of hostilities, until the 2023 Azerbaijani offensive, which forcefully reintegrated the previously *de facto* independent territory. In contrast, the frozen conflict involving the self-declared breakaway Pridnestrovian Moldovan Republic has laid dormant for decades since the initial Transnistria War with little indication of either re-escalating or terminating.
 
 Thus, there remains the question, why are some frozen conflicts characterized by a significant degree of violent instability, while others remain relatively static? And, what are some of the factors that can explain these periods of escalation and de-escalation that some frozen conflicts experience? I decide to focus on the international dimension of frozen conflicts by specifically analyzing the impact of international arms transfers to government forces on the probability that frozen conflicts transition between being active and frozen.
@@ -66,7 +68,7 @@ Within the hidden markov model, I model the probability of a conflict transition
 #|          transition paths for a single conflict-year. Note,
 #|          "Terminated" is *not* explicitly modeled in the HMM being
 #|          presented in this paper. It is shown in order to emphasize
-#|          that when a civil conflict is conclusive terminated, it
+#|          that when a civil conflict is conclusively terminated, it
 #|          drops out of the dataset. In other words, "Terminated", is
 #|          an absorbing state with no possibility of transitioning to
 #|          "Active" or "Frozen".
@@ -94,8 +96,6 @@ Within the hidden markov model, I model the probability of a conflict transition
     (Frozen) edge [bend left] (Termination);
 
 \end{tikzpicture}
-
-
 ```
 
 Formally, for some conflict $i \in \{1, 2, \ldots, N\}$, let $S_{1:T_i}$ be a hidden sequence from a discrete stochastic process satisfying the first-order markov property $p\left(S_{t+1} = s | S_{t}, S_{t-1}, \ldots, S_{1}\right) = p\left(S_{t+1} = s | S_t \right)$ with $S_t \in \{1, \ldots, K\}$. For the purposes of this analysis, $S_t$ can take on one of two transient states (*i.e.*, $K = 2$) representing either an "Active" conflict or a "Frozen" conflict as depicted in @fig-states. There is also an implicit absorbing state, "Terminated", that is not directly modeled, but following which a conflict drops out of the dataset. The initial transition probabilities for $S_1$ are given by the K-vector $\pi$. For $t > 1$,
@@ -168,7 +168,7 @@ The joint probability function for both sequence can be found recursively and ma
 p(y_{1:T_i} | S_{1:T_i}) = \sum_{\boldsymbol{S}} p\left( y_{1:T_i}, S_{1:T_i} \right) = \sum_{S_1, S_2, \ldots, S_{T_i}} \left( \pi_{S_1} p(y_1 | S_1) \prod_{t=2}^{T_i} \alpha_{i, S_{t-1}S_{t}}(t) p(y_t | S_t) \right)
 \end{equation}
 
-Since $y_t \in \mathbb{N}_0$, I model the yearly battle related deaths given that $S_t$ is in state $k$ with a negative binomial distribution using the mean-dispersion parameterization,
+Since $y_t \in \mathbb{N}_0$, I model the yearly battle related deaths given that $S_t$ is in state $k$ with a negative binomial distribution using a mean-dispersion parameterization,
 
 \begin{align*}
 y_{t} | S_t = k \sim \text{NegBinomial}\left(\mu_{ik}, \phi\right) \\
@@ -182,16 +182,17 @@ Finally, extending the notation to the full set of sequences for all conflicts, 
 \mathcal{L}(\boldsymbol{y} | \theta) = \prod_{i=1}^N p(y^{(i)}_{1:T_i} | S^{(i)}_{1:T_i})
 \end{equation}
 
-To complete the full inference model I set the following priors. For the initial state probabilities and the baseline intercepts in the time-varying transition function $\alpha_{i,jk}$:
+To complete the full inference model I set the following priors. For the initial state probability simplex I select a flat dirichlet prior, $\pi \sim \text{Dirichlet}\left(\frac{1}{K}, \ldots, \frac{1}{K}\right)$.[^dirichlet] For the baseline intercepts in the time-varying transition function, $\alpha_{i,jk}$, I place a hierarchical prior.
 
 \begin{align*}
-\pi & \sim \text{Dirichlet}\left(\frac{1}{K}, \ldots, \frac{1}{K}\right) \\
 \nu_{i,jk} & \sim \text{Normal}(\mu_{jk}, \sigma_{jk}) \\
 \mu_{jk} & \sim \text{Normal}(0, 1) \\
 \sigma_{jk} & \sim \text{Cauchy}_+(0, 0.5)
 \end{align*}
 
-Thus, the varying intercepts, $\nu_{\cdot,jk}$, are given hierarchical priors in order to partially pool information across conflicts. Meanwhile, for each regression coefficient, $\beta_d \in \mathbb{R}^{K \times K}$ for $d = 1, 2, \ldots, D$ covariates, I place an uninformative multivariate normal prior with an LKJ prior [@lewandowski_generating_2009] on the correlation matrix, $\Omega$, and a standard Half-Cauchy on the diagonal of variances, $\upsilon$.
+[^dirichlet]: TODO: This is an uninformative prior that encodes an equal prior probability for the initial observation to be either a frozen or active. Practically, this will have a relatively small impact on the actual model estimates since the likelihood should dominate the prior; however, conceptually it may be more consistent to give more probability weight to the active state since frozen conflicts by definition should start as active conflicts. The complication is that there is left-censoring in the dataset --- our conflict sequences reflect the start date of the BRD dataset and may not capture the actual first conflict-year coded by UCDP.
+
+Thus, the varying intercepts, $\nu_{\cdot,jk}$, are partially pooled across conflicts. Meanwhile, for each regression coefficient, $\beta_d \in \mathbb{R}^{K \times K}$ for $d = 1, 2, \ldots, D$ covariates, I place an uninformative multivariate normal prior with an LKJ prior [@lewandowski_generating_2009] on the correlation matrix, $\Omega$, and a standard Half-Cauchy on the diagonal of variances, $\upsilon$.
 
 \begin{align*}
 \beta_{d} & \sim \text{MultiNormal}(0_K, \Sigma) \\
@@ -201,13 +202,17 @@ Thus, the varying intercepts, $\nu_{\cdot,jk}$, are given hierarchical priors in
 
 For the conditional probability function, $p(y^{(i)}_t | S^{(i)}_t)$, the mean for the negative binomial distribution is also given a hierarchical prior with informative hyperpriors on the log-scale expectations for the two latent states. Substantively, this encodes an expectation that an "Active" conflict will feature more battle related deaths than a "Frozen" conflict.[^prior]
 
+[^prior]: The hierarchical parameters for $\mu_{ij}$ are on the log scale. An informative hyperprior is placed on $\lambda$ where $\mathbb{E}(\lambda) = (0, 6.21)$ corresponding to 1 and ~500 battle related deaths respectively.
+
 \begin{align*}
 \phi & \sim \text{Gamma}(2, 0.1) \\
 \mu_{ij} & \sim \text{LogNormal}\left(\lambda_j, \tau_j \right) \\
 \lambda_1 & \sim \text{Normal}(0, 1) \\
-\lambda_2 & \sim \text{Normal}(6.2, 1) \\
+\lambda_2 & \sim \text{Normal}(6.21, 1) \\
 \tau & \sim \text{Cauchy}_+(0, 0.5)
 \end{align*}
+
+Finally,
 
 ## Data
 
@@ -237,15 +242,23 @@ After fitting the model using Hamiltonian Monte Carlo, @fig-active-prob shows th
 #|          a standard min-max transformation to be constrained on a
 #|          [0, 1] interval.
 
+library(cmdstanr)
 library(dplyr)
 
 log_normalize <- \(x) (x - min(x)) / (max(x) - min(x))
 
-dataset <- readRDS("./data/model_data.rds")
-fit <- readRDS("./fit.rds")
+dataset <- readRDS("./data/merge_data.rds") |>
+    filter(high_intensity)
 
-Z_star <- fit$draws("Z_star", format = "matrix")
-active_state <- Z_star[, sprintf("Z_star[%d,2]", 1:nrow(dataset))]
+files <- list.files("posteriors", "csv$", full.names = T)
+stopifnot(length(files) > 0)
+
+# This is using data.table::fread which needs R.utils installed to
+# read compressed files.
+fit <- as_cmdstan_fit(files)
+
+Z_prob <- fit$draws("Z_prob", format = "matrix")
+active_state <- Z_prob[, sprintf("Z_prob[%d,2]", 1:nrow(dataset))]
 
 conflicts <- c(394, 388, 352, 401)
 par(mfrow = c(2, 2))
@@ -274,7 +287,7 @@ Meanwhile, @fig-beta plots the posterior densities for the main independent vari
 
 library(latex2exp)
 
-tiv <- fit$draws(c(sprintf("beta[1,%d,2]", 1:2), sprintf("beta[2,%d,2]", 1:2)),
+tiv <- fit$draws(c(sprintf("beta[1,%d,1]", 1:2), sprintf("beta[2,%d,1]", 1:2)),
                  format = "matrix")
 
 par(mfrow = c(2, 2), oma = c(1, 1, 2, 1), mar = c(4, 6, 2, 1))
@@ -297,6 +310,14 @@ plot(density(tiv[, 4]), ylab = "", xlab = TeX("$\\beta_{tiv}$"), main = "", yaxt
 abline(v = 0, lty = 2)
 
 ```
+
+# Conclusion
+
+Future work:
+- incorporate more battlefield dynamics
+- dyadic level rather than conflict level
+
+
 
 # Acknowledgement
 
