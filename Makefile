@@ -14,14 +14,14 @@ reset  := \033[0m
 all: $(manuscript:.qmd=.pdf)
 .PHONY: build push run
 
-build: ## Build the Stan model container image
+build: json/hmm.json json/sim.json ## Build the Stan model container image
 	podman build -t ghcr.io/jsks/hmm --target=hmm . && \
 		podman build -t ghcr.io/jsks/sbc --target=sbc .
 
 clean: ## Remove all generated files
 	rm -rf $(foreach ext, pdf docx html, $(manuscript:%.qmd=%.$(ext))) \
 		$(manuscript:%.qmd=%_files) $(manuscript:%.qmd=%.cache) \
-		data/model_data.rds
+		data/merge_data.rds json
 
 help:
 	@printf 'To compile $(manuscript) as a pdf:\n\n'
@@ -51,7 +51,7 @@ data/sequences.rds: $(raw)/ucdp-peace-agreements-221.xlsx \
 			R/sequences.R
 	Rscript R/sequences.R
 
-data/model_data.rds: data/sequences.rds \
+data/merge_data.rds: data/sequences.rds \
 			$(raw)/V-Dem-CY-Full+Others-v14.rds \
 			$(raw)/Third-Party-PKMs-version-3.5.xls \
 			$(raw)/Conflict_onset_2022-1.xlsx \
@@ -59,10 +59,13 @@ data/model_data.rds: data/sequences.rds \
 			R/merge.R
 	Rscript R/merge.R
 
+json/%.json: R/%.R data/merge_data.rds
+	Rscript $<
+
 ###
 # Manuscript targets
 $(foreach ext, pdf docx html, $(manuscript:%.qmd=%.$(ext))): \
-	data/model_data.rds \
+	data/merge_data.rds \
 	fit.rds
 
 %.docx: %.qmd
