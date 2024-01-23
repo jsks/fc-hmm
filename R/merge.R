@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 #
-# Unit of Analysis: Conflict-years 1989 - 2021
+# Unit of Analysis: Conflict-years 1990 - 2021
 ###
 
 library(dplyr)
@@ -37,7 +37,11 @@ df <- readRDS("./data/sequences.rds") |>
 # V-Dem data
 vdem <- readRDS("./data/raw/V-Dem-CY-Full+Others-v14.rds") |>
     select(country_name, COWcode, year, v2x_polyarchy, e_pop, e_gdppc) |>
-    mutate(country_name =
+    group_by(country_name) |>
+    arrange(year) |>
+    mutate(e_pop = log(e_pop) |> lag(),
+           e_gdppc = log(e_gdppc) |> lag(),
+           country_name =
                case_when(country_name ==  "Burma/Myanmar" ~ "Myanmar",
                          country_name == "Yemen" ~ "North Yemen",
                          country_name ==  "Democratic Republic of the Congo" ~ "DR Congo",
@@ -49,12 +53,22 @@ vdem <- readRDS("./data/raw/V-Dem-CY-Full+Others-v14.rds") |>
                          country_name ==  "Ivory Coast" ~ "Cote d'Ivoire",
                          T ~ country_name))
 
+# TODO: adjust newly independent countries, use the values from the
+# previous unified country
+vdem <- vdem |>
+    mutate(e_pop = case_when(country_name == "Bosnia-Herzegovina" & year == 1992 ~ 7.02,
+                             country_name == "South Sudan" & year == 2011 ~ 8.22,
+                             T ~ e_pop),
+           e_gdppc = case_when(country_name == "Bosnia-Herzegovina" & year == 1992 ~ 1.93,
+                               country_name == "South Sudan" & year == 2011 ~ 1.30,
+                               T ~ e_gdppc))
+
 ###
 # PKO Data
 pko <- read_xls("./data/raw/Third-Party-PKMs-version-3.5.xls") |>
     select(idx = OBSNUM, COWcode = CCODE1, start = STARTYR, end = ENDYR) |>
-    mutate(end = ifelse(is.na(end), 2020, end)) |>
-    reframe(COWcode = first(COWcode), year = start:end, .by = idx) |>
+    mutate(end = ifelse(is.na(end), 2021, end)) |>
+    reframe(COWcode = first(COWcode), year = (start+1):(end+1), .by = idx) |>
     distinct(COWcode, year) |>
     mutate(pko = 1)
 
@@ -62,10 +76,9 @@ pko <- read_xls("./data/raw/Third-Party-PKMs-version-3.5.xls") |>
 # Ceasefires
 ceasefires <- read_xlsx("./data/raw/Conflict_onset_2022-1.xlsx") |>
     group_by(conflict_id, year) |>
-    summarise(ceasefire = any(onset_declare == 1)) |>
+    summarise(ceasefire = any(onset_effect == 1)) |>
     filter(ceasefire) |>
-    mutate(year = year + 1) |>
-    ungroup()
+    mutate(year = year + 1)
 
 ###
 # SIPRI - Arms Transfer Dataset (1950 - 2023)
@@ -74,15 +87,14 @@ tiv <- read.csv("./data/raw/import-export-values_1950-2023.csv", skip = 9) |>
     select(Recipient, matches("^X\\d{4}$")) |>
     pivot_longer(cols = -Recipient, names_to = "year", values_to = "tiv") |>
     mutate(year = sub("X", "", year) |> as.numeric(),
-           tiv = case_when(tiv ==  0 ~ 0.5,
+           tiv = case_when(tiv == 0 ~ 0.5,
                            is.na(tiv) ~ 0,
-                           T ~ tiv)) |>
+                           T ~ tiv) |> asinh()) |>
     group_by(Recipient) |>
     arrange(year) |>
     mutate(across(tiv, .fns = lags, .names = "{.col}_{.fn}"),
            tiv_avg = roll_mean(tiv, 5)) |>
-    ungroup() |>
-    filter(between(year, 1989, 2021))
+    ungroup()
 
 ###
 # Full merge
@@ -93,19 +105,18 @@ merge.df <- left_join(df, vdem, by = c("side_a" = "country_name", "year")) |>
 
 model_data <- merge.df |>
     mutate(pko = replace_na(pko, 0),
-           ceasefire = replace_na(ceasefire, 0),
-           tiv = replace_na(tiv, 0)) |>
+           ceasefire = replace_na(ceasefire, 0)) |>
     group_by(conflict_id) |>
     arrange(year) |>
     fill(gwno_a, e_pop, e_gdppc) |>
-    mutate(high_intensity = sum(brd, na.rm = T) >= 500) |>
     ungroup() |>
     select(-idx)
 
 # Finally, add major ongoing civil conflicts
-final.df <- group_by(model_data, gwno_a, year) |>
-    mutate(ongoing = (sum(brd) - brd) > 500) |>
+final.df <- filter(model_data, year != 1989) |>
+    group_by(gwno_a, year) |>
+    mutate(ongoing = (sum(brd) - brd) >= 500) |>
     ungroup() |>
     arrange(conflict_id, year)
 
-saveRDS(final.df, "./data/model_data.rds")
+saveRDS(final.df, "./data/merge_data.rds")
