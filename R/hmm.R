@@ -21,11 +21,13 @@ df <- readRDS("data/merge_data.rds") |>
     arrange(conflict_id, year)
 
 # Time-varying covariates affecting transition probabilities.
-X <- select(df, tiv_avg, ceasefire, pko, ongoing, v2x_polyarchy,
+X <- select(df, tiv, ceasefire, pko, ongoing, v2x_polyarchy,
                      e_pop, e_gdppc, duration) |>
     polynomial("v2x_polyarchy", 2) |>
     polynomial("duration", 3) |>
-    mutate(across(c(tiv_avg, e_pop, e_gdppc), normalize))
+    mutate(e_pop = log(e_pop),
+           e_gdppc = log(e_gdppc)) |>
+    mutate(across(c(tiv, e_pop, e_gdppc), normalize))
 
 stopifnot(!anyNA(X))
 
@@ -38,7 +40,7 @@ conflicts <- mutate(df, row = row_number()) |>
 ###
 # Stan input data
 data <- list(N = nrow(df),
-             K = 2,
+             K = 3,
              D = ncol(X),
              n_conflicts = n_distinct(df$conflict_id),
              conflict_id = as.factor(df$conflict_id) |> as.numeric(),
@@ -46,8 +48,8 @@ data <- list(N = nrow(df),
              conflict_ends = conflicts$end,
              X = data.matrix(X),
              y = df$brd,
-             mu_location = c(0, 6.21),
-             mu_scale = c(1, 1))
+             mu_location = c(1, 4, 6.21),
+             mu_scale = c(1, 1, 1))
 str(data)
 
 stopifnot(!anyNA(data))
