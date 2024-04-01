@@ -1,3 +1,18 @@
+/*
+ * Simulation-Based Calibration
+ *
+ * This validates the HMM implementation in `base.stan` according to
+ * the following procedure:
+ *   1. Generate simulated data, theta' ~ p(theta) and y' ~ p(y|theta', X)
+ *      for fixed covariates X.
+ *   2. Fit full inference model to the simulated data
+ *   3. Calculate rank statistics comparing posterior draws from p(theta
+ *        | y', X) to theta'
+ *
+ * The file `scripts/sbc.sh` repeats this procedure ITER times and the
+ * histograms are plotted in the appendix of the paper.
+ */
+
 functions {
     vector rank(vector theta, vector sim) {
         vector[size(theta)] lt;
@@ -9,26 +24,67 @@ functions {
 }
 
 data {
-    int N;
-    int K;
+  int N;          // Total number of observations across all sequences
+  int K;          // Number of latent states
+  int D;          // Number of regressor covariates
+  matrix[N, D] X; // Transition regressor covariates
 
-    int D;
-    matrix[N, D] X;
+  int n_conflicts;                                          // Number of conflicts
+  array[N] int<lower=1, upper=n_conflicts> conflict_id;     // Conflict id for each obs.
+  array[n_conflicts] int<lower=1, upper=N> conflict_starts; // Start of each conflict
+  array[n_conflicts] int<lower=1, upper=N> conflict_ends;   // End of each conflict
 
-    int n_conflicts;
-    array[N] int<lower=1, upper=n_conflicts> conflict_id;
-    array[n_conflicts] int<lower=1, upper=N> conflict_starts; // Start of each conflict
-    array[n_conflicts] int<lower=1, upper=N> conflict_ends; // End of each conflict
-
-    array[K] real mu_location; // Log-mean prior
-    array[K] real<lower=0> mu_scale;    // Standard deviation of log-mean prior
+  // Prior parameters - emission log-means
+  array[K] real mu_location;
+  array[K] real mu_scale;
 }
 
 transformed data {
     // Initial state probabilities
     simplex[K] pi_sim = dirichlet_rng(rep_vector(1, K));
 
-    // Log-mean of negative binomial
+    // Dispersion parameter for negative binomial
+    vector<lower=0>[K] phi_sim;
+    for (i in 1:K)
+       phi_sim[i] = gamma_rng(2, 0.1);
+
+    // Covariate coefficients for transition matrix
+    array[K] matrix[K, D] beta_sim;
+    for (i in 1:K) {
+        for (j in 1:K) {
+            for (d in 1:D)
+                beta_sim[i, j, d] = normal_rng(0, 2.5);
+        }
+    }
+
+    // Covariate coefficients for log-mean regression
+    matrix[D, K] lambda;
+    for (i in 1:D) {
+        for (j in 1:K)
+            lambda[i, j] = normal_rng(0, 2.5);
+    }
+
+    // Partially pooled transition intercepts
+    matrix[K, K] nu_sim;
+    matrix<lower=0>[K, K] sigma_sim;
+
+    for (i in 1:K) {
+        for (j in 1:K) {
+            sigma_sim[i, j] = abs(normal_rng(0, 0.5));
+            nu_sim[i, j] = student_t_rng(3, 0, 1);
+        }
+    }
+
+    array[n_conflicts] matrix[K, K] zeta_sim;
+    for (conflict in 1:n_conflicts) {
+        for (i in 1:K) {
+            for (j in 1:K) {
+                zeta_sim[conflict, i, j] = normal_rng(nu_sim[i, j], sigma_sim[i, j]);
+            }
+        }
+    }
+
+    // Conflict specific negative binomial log-means
     vector[K] mu_sim;
     vector<lower=0>[K] tau_sim;
     for (i in 1:K) {
@@ -43,35 +99,6 @@ transformed data {
             eta_sim[conflict, i] = normal_rng(mu_sim[i], tau_sim[i]);
     }
 
-    // Dispersion parameter for negative binomial
-    real<lower=0> phi_sim = gamma_rng(2, 0.1);
-
-    // Conflict-varying intercepts for transition matrix
-    array[n_conflicts] matrix[K, K] alpha_sim;
-    matrix<lower=0>[K, K] sigma_sim;
-    for (i in 1:K) {
-        for (j in 1:K)
-            sigma_sim[i, j] = abs(cauchy_rng(0, 2.5));
-    }
-    for (conflict in 1:n_conflicts) {
-        for (i in 1:K) {
-            for (j in 1:K)
-                alpha_sim[conflict, i, j] = normal_rng(0, sigma_sim[i, j]);
-        }
-    }
-
-    matrix[K, K] nu_sim;            // Transition matrix intercept
-    array[K] matrix[K, D] beta_sim; // Transition matrix covariate coefficients
-    for (i in 1:K) {
-        for (j in 1:K)
-                nu_sim[i, j] = student_t_rng(3, 0, 1);
-
-        for (j in 1:K) {
-            for (d in 1:D)
-                beta_sim[i, j, d] = normal_rng(0, 2.5);
-        }
-    }
-
     // Latent states and observations
     array[N] int y;
     array[N] int S;
@@ -81,15 +108,14 @@ transformed data {
                 end = conflict_ends[conflict];
 
             S[start] = categorical_rng(pi_sim);
-            y[start] = neg_binomial_2_log_rng(eta_sim[conflict,S[start]], phi_sim);
+            y[start] = neg_binomial_2_log_rng(X[t,] * lambda[, S[start]] + eta_sim[conflict,S[start]], phi_sim[S[start]]);
 
             for (t in (start + 1):end) {
-                // K x D \times D x 1 -> K x 1
-                vector[K] p = softmax(nu_sim[, S[t-1]] + alpha_sim[conflict][, S[t-1]] +
-                                      beta_sim[S[t-1]] * X[t, ]');
+                // K x 1 + K x D \times D x 1 -> K x 1
+                vector[K] p = softmax(zeta_sim[conflict][, S[t-1]] + beta_sim[S[t-1]] * X[t, ]');
 
                 S[t] = categorical_rng(p);
-                y[t] = neg_binomial_2_log_rng(eta_sim[conflict,S[t]], phi_sim);
+                y[t] = neg_binomial_2_log_rng(X[t, ] * lambda[, S[t]] + eta_sim[conflict,S[t]], phi_sim[S[t]]);
             }
         }
     }
@@ -101,21 +127,22 @@ generated quantities {
     vector[K] pi_lt = rank(pi, pi_sim);
     int phi_lt = phi < phi_sim;
 
-    array[n_conflicts] matrix[K, K] alpha_lt;
-    for (conflict in 1:n_conflicts) {
-        for (i in 1:K)
-            alpha_lt[conflict][,i] = rank(alpha[conflict][,i], alpha_sim[conflict][,i]);
-    }
-
     array[K] matrix[K, D] beta_lt;
     for (i in 1:K) {
         for (j in 1:D)
             beta_lt[i][, j] = rank(beta[i][, j], beta_sim[i][, j]);
     }
 
-    matrix[K, K] nu_lt;
+    matrix[D, K] lambda_lt;
     for (i in 1:K)
+        lambda_lt[, i] = rank(lambda[, i], lambda_sim[, i]);
+
+    matrix[K, K] nu_lt;
+    matrix[K, K] sigma_lt;
+    for (i in 1:K) {
         nu_lt[, i] = rank(nu[, i], nu_sim[, i]);
+        sigma_lt[, i] = rank(sigma[, i], sigma_sim[, i]);
+    }
 
     vector[K] mu_lt = rank(mu, mu_sim);
     vector[K] tau_lt = rank(tau, tau_sim);
