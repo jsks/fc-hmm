@@ -44,8 +44,11 @@ ENTRYPOINT ["/sbc", "data", "file=/sim.json", "sample"]
 # Hidden markov model image
 FROM gcr.io/distroless/cc-debian12 AS hmm
 
+COPY --from=cmdstan /cmdstan/bin/diagnose .
 COPY --from=cmdstan /cmdstan/hmm .
 COPY --from=cmdstan /cmdstan/stan/lib/stan_math/lib/tbb/libtbb.so.2 libtbb.so.2
 COPY json/hmm.json .
 
-ENTRYPOINT ["/hmm", "data", "file=/hmm.json", "sample"]
+ENTRYPOINT ["/hmm", "data", "file=/hmm.json", "sample", "num_warmup=10000", \
+            "num_samples=10000", "thin=10", "adapt", "delta=0.95", \
+            "algorithm=hmc", "engine=nuts", "max_depth=12"]
