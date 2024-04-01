@@ -12,16 +12,18 @@ white  := \033[0;37m
 reset  := \033[0m
 
 all: $(manuscript:.qmd=.pdf)
-.PHONY: build push run
+.PHONY: build clean help preview wc
 
 build: json/hmm.json json/sim.json ## Build the Stan model container image
-	podman build -t ghcr.io/jsks/hmm --target=hmm . && \
-		podman build -t ghcr.io/jsks/sbc --target=sbc .
+	podman build -t jsks/hmm --target=hmm . && \
+		podman build -t jsks/sbc --target=sbc .
 
 clean: ## Remove all generated files
 	rm -rf $(foreach ext, pdf docx html, $(manuscript:%.qmd=%.$(ext))) \
 		$(manuscript:%.qmd=%_files) $(manuscript:%.qmd=%.cache) \
 		data/merge_data.rds json
+
+data: json/hmm.json json/sim.json ## Generate data files
 
 help:
 	@printf 'To compile $(manuscript) as a pdf:\n\n'
@@ -33,10 +35,8 @@ help:
 			'{ printf "\t$(blue)%-10s $(white)%s$(reset)\n", $$1, $$2 }'
 	@printf '\n'
 
-push: ## Push the Stan model container image to GitHub Container Registry
-	gpg -q -d $(token) | podman login ghcr.io --username jsks --password-stdin
-	podman push ghcr.io/jsks/hmm:latest
-	podman push ghcr.io/jsks/sbc:latest
+preview: ## Auto-rebuild html manuscript
+	quarto preview $(manuscript) --to html
 
 wc: ## Rough estimate of word count for manuscript
 	@printf '$(manuscript): '
