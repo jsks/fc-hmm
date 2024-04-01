@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #SBATCH -J sbc
-#SBATCH -t 12:00:00
+#SBATCH -t 48:00:00
 #SBATCH -N 1
 #SBATCH --exclusive
 #SBATCH --mail-type=ALL

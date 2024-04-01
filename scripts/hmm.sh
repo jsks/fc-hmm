@@ -1,9 +1,12 @@
 #!/bin/bash
 #
 #SBATCH -J hmm
-#SBATCH -t 01:00:00
-#SBATCH -n 8
+#SBATCH -t 08:00:00
+#SBATCH -n 4
 #SBATCH --mail-type=ALL
 
-apptainer run --bind $PWD:/data hmm.sif num_chains=8 num_threads=8 \
+ncores=4
+
+apptainer run --bind $PWD:/data hmm.sif num_chains=$ncores num_threads=$ncores \
           output sig_figs=4 file=/data/output.csv
+apptainer exec --bind $PWD:/data hmm.sif /diagnose /data/output_{1..$ncores}.csv
