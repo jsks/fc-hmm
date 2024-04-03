@@ -39,9 +39,7 @@ vdem <- readRDS("./data/raw/V-Dem-CY-Full+Others-v14.rds") |>
     select(country_name, COWcode, year, v2x_polyarchy, e_pop, e_gdppc) |>
     group_by(country_name) |>
     arrange(year) |>
-    mutate(e_pop = log(e_pop) |> lag(),
-           e_gdppc = log(e_gdppc) |> lag(),
-           country_name =
+    mutate(country_name =
                case_when(country_name ==  "Burma/Myanmar" ~ "Myanmar",
                          country_name == "Yemen" ~ "North Yemen",
                          country_name ==  "Democratic Republic of the Congo" ~ "DR Congo",
@@ -51,7 +49,8 @@ vdem <- readRDS("./data/raw/V-Dem-CY-Full+Others-v14.rds") |>
                          country_name ==  "Republic of the Congo" ~ "Congo",
                          country_name ==  "United States of America" ~ "United States",
                          country_name ==  "Ivory Coast" ~ "Cote d'Ivoire",
-                         T ~ country_name))
+                         T ~ country_name)) |>
+   fill(e_pop, e_gdppc)
 
 # TODO: adjust newly independent countries, use the values from the
 # previous unified country
@@ -108,11 +107,7 @@ merge.df <- left_join(df, vdem, by = c("side_a" = "country_name", "year")) |>
 
 model_data <- merge.df |>
     mutate(pko = replace_na(pko, 0),
-           ceasefire = replace_na(ceasefire, 0)) |>
-    group_by(conflict_id) |>
-    arrange(year) |>
-    fill(gwno_a, e_pop, e_gdppc) |>
-    ungroup()
+           ceasefire = replace_na(ceasefire, 0))
 
 # Finally, add major ongoing civil conflicts
 final.df <- filter(model_data, year != 1989) |>
