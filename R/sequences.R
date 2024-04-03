@@ -1,12 +1,27 @@
 #!/usr/bin/env Rscript
 #
 # Create sequence of active and non-active years for all civil
-# conflicts in UCDP.
+# conflicts in UCDP (1989 - 2021).
 ###
 
 library(dplyr)
 library(readxl)
 library(tidyr)
+
+printf <- function(...) sprintf(...) |> print()
+
+# Returns true if the years are consecutive
+consecutive <- function(years) {
+    if (length(years) == 1)
+        return(F)
+
+    replace_na(lead(years) - years == 1, F)
+}
+
+episodes <- function(v) {
+    idx <- rev(v) |> cumsum() |> rev()
+    max(idx) - idx
+}
 
 ###
 # UCDP peace agreements (1975 - 2021)
@@ -26,18 +41,21 @@ pax.df <- group_by(pce, conflict_id, year) |>
     slice(n()) |>
     select(conflict_id, year, pax = paid, full_pax)
 
-# Conflict Termination Dataset (1948 - 2019)
+###
+# Conflict Termination Dataset (1946 - 2020)
+#   3/4: Military Victory
+#   6: Actor Death
 term <- read_xlsx("./data/raw/ucdp-term-acd-3-2021.xlsx") |>
     filter(type_of_conflict %in% 3:4, outcome %in% c(3, 4, 6)) |>
     select(conflict_id, year, confterm)
 
-# Merged termination dataset
+# Merged termination and peace agreement dataset
 term.df <- full_join(pax.df, term, by = c("conflict_id", "year")) |>
     filter(between(year, 1989, 2021)) |>
     mutate(confterm = ifelse(is.na(confterm), 0, confterm))
 
 ###
-# Battle related fatalities - Event dataset
+# Battle related fatalities - Event dataset (1989 - 2022)
 ged <- readRDS("./data/raw/GEDEvent_v23_1.rds")
 
 # We need the conflict_id for all civil conflict episodes
@@ -107,16 +125,42 @@ final.df <- full_join(reduced.df, grid, by = c("conflict_id", "year")) |>
            confterm = replace_na(confterm, 0),
            pax = ifelse(!is.na(pax), 1, 0),
            terminated = replace_na(terminated, F)) |>
-    ungroup()
+    ungroup() |>
+    select(-idx) |>
+    filter(high_intensity)
 
 ###
 # Manually adjust conflict ends for several conflicts that have
-# officially ended, but aren't picked up by our criteria.
+# officially ended, but aren't picked up by our criteria. This
+# includes, for example, conflicts where the rebel group transitions
+# into a political party.
+#
+# Start by identifying sequences with indeterminate terminations as
+# candidates for manual adjustment.
+ged2022 <- select(ged, conflict_id = conflict_new_id, year) |> filter(year == 2022)
+spillover <- group_by(final.df, conflict_id) |>
+    filter(year == max(year), brd == 0, is.na(gwno_a), high_intensity,
+           !conflict_id %in% ged2022$conflict_id) |>
+    select(conflict_id, side_a, side_b) |>
+    write.csv("data/raw_candidates.csv", row.names = F)
+
+# Code the (possible) termination year for each candidate sequence
+if (!file.exists("data/candidates.csv"))
+    stop("Missing manual coding of termination years for candidate sequences")
+
 candidates <- read.csv("./data/candidates.csv") |>
-    filter(!is.na(terminated)) |>
-    select(conflict_id, termination_year = terminated)
+    filter(!is.na(termination)) |>
+    select(conflict_id, termination_year = termination)
 
+# Finally, merge back the manually adjusted termination years
 adjusted.df <- left_join(final.df, candidates, by = "conflict_id") |>
-    filter(is.na(termination_year) | year <= termination_year)
+    filter(is.na(termination_year) | year <= termination_year) |>
+    arrange(conflict_id, year)
 
+printf("Finished with %d conflicts and %d observations",
+       n_distinct(adjusted.df$conflict_id),
+       nrow(adjusted.df))
+
+###
+# Lift your skinny fists like antennas to heaven and save!
 saveRDS(adjusted.df, "data/sequences.rds")
