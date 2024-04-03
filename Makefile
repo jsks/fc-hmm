@@ -1,9 +1,7 @@
 SHELL = /bin/bash -eo pipefail
 
 manuscript := paper.qmd
-token      := .token.gpg
-
-raw := data/raw
+raw        := data/raw
 
 # Escape codes for colourized output in `help` command
 blue   := \033[1;34m
