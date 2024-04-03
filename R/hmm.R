@@ -16,18 +16,17 @@ polynomial <- function(df, var, n) {
 ###
 # Load merged data
 df <- readRDS("data/merge_data.rds") |>
-    select(-termination_year) |>
-    filter(high_intensity) |>
     arrange(conflict_id, year)
 
 # Time-varying covariates affecting transition probabilities.
-X <- select(df, tiv, ceasefire, pko, ongoing, v2x_polyarchy,
+X <- select(df, tiv_1, ceasefire, pko, ongoing, v2x_polyarchy,
                      e_pop, e_gdppc, duration) |>
     polynomial("v2x_polyarchy", 2) |>
     polynomial("duration", 3) |>
-    mutate(e_pop = log(e_pop),
+    mutate(tiv_1 = asinh(tiv_1),
+           e_pop = log(e_pop),
            e_gdppc = log(e_gdppc)) |>
-    mutate(across(c(tiv, e_pop, e_gdppc), normalize))
+    mutate(across(c(tiv_1, e_pop, e_gdppc), normalize))
 
 stopifnot(!anyNA(X))
 
