@@ -73,11 +73,14 @@ pko <- read_xls("./data/raw/Third-Party-PKMs-version-3.5.xls") |>
     mutate(pko = 1)
 
 ###
-# Ceasefires
-ceasefires <- read_xlsx("./data/raw/Conflict_onset_2022-1.xlsx") |>
+# Ceasefires (1989 - 2021)
+ceasefires <- read_xlsx("./data/raw/CFD_oct_2022_id-1.xlsx") |>
+    filter(ucdp_acd_id != -1, partial == 0, p_holiday == 0,
+           p_humanitarian == 0, cf_effect_yr != 0) |>
+    mutate(year = ifelse(cf_effect_yr == -1, cf_dec_yr, cf_effect_yr)) |>
+    select(conflict_id = ucdp_acd_id, year) |>
     group_by(conflict_id, year) |>
-    summarise(ceasefire = any(onset_effect == 1)) |>
-    filter(ceasefire) |>
+    summarise(ceasefire = 1) |>
     mutate(year = year + 1)
 
 ###
@@ -89,7 +92,7 @@ tiv <- read.csv("./data/raw/import-export-values_1950-2023.csv", skip = 9) |>
     mutate(year = sub("X", "", year) |> as.numeric(),
            tiv = case_when(tiv == 0 ~ 0.5,
                            is.na(tiv) ~ 0,
-                           T ~ tiv) |> asinh()) |>
+                           T ~ tiv)) |>
     group_by(Recipient) |>
     arrange(year) |>
     mutate(across(tiv, .fns = lags, .names = "{.col}_{.fn}"),
@@ -109,14 +112,15 @@ model_data <- merge.df |>
     group_by(conflict_id) |>
     arrange(year) |>
     fill(gwno_a, e_pop, e_gdppc) |>
-    ungroup() |>
-    select(-idx)
+    ungroup()
 
 # Finally, add major ongoing civil conflicts
 final.df <- filter(model_data, year != 1989) |>
+    select(-termination_year) |>
     group_by(gwno_a, year) |>
     mutate(ongoing = (sum(brd) - brd) >= 500) |>
     ungroup() |>
     arrange(conflict_id, year)
 
+# Save the final dataset
 saveRDS(final.df, "./data/merge_data.rds")
