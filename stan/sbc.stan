@@ -58,10 +58,10 @@ transformed data {
     }
 
     // Covariate coefficients for log-mean regression
-    matrix[D, K] lambda;
+    matrix[D, K] lambda_sim;
     for (i in 1:D) {
         for (j in 1:K)
-            lambda[i, j] = normal_rng(0, 2.5);
+            lambda_sim[i, j] = normal_rng(0, 2.5);
     }
 
     // Partially pooled transition intercepts
@@ -108,14 +108,14 @@ transformed data {
                 end = conflict_ends[conflict];
 
             S[start] = categorical_rng(pi_sim);
-            y[start] = neg_binomial_2_log_rng(X[t,] * lambda[, S[start]] + eta_sim[conflict,S[start]], phi_sim[S[start]]);
+            y[start] = neg_binomial_2_log_rng(X[start,] * lambda_sim[, S[start]] + eta_sim[conflict,S[start]], phi_sim[S[start]]);
 
             for (t in (start + 1):end) {
                 // K x 1 + K x D \times D x 1 -> K x 1
                 vector[K] p = softmax(zeta_sim[conflict][, S[t-1]] + beta_sim[S[t-1]] * X[t, ]');
 
                 S[t] = categorical_rng(p);
-                y[t] = neg_binomial_2_log_rng(X[t, ] * lambda[, S[t]] + eta_sim[conflict,S[t]], phi_sim[S[t]]);
+                y[t] = neg_binomial_2_log_rng(X[t, ] * lambda_sim[, S[t]] + eta_sim[conflict,S[t]], phi_sim[S[t]]);
             }
         }
     }
@@ -125,7 +125,7 @@ transformed data {
 
 generated quantities {
     vector[K] pi_lt = rank(pi, pi_sim);
-    int phi_lt = phi < phi_sim;
+    vector[K] phi_lt = rank(phi, phi_sim);
 
     array[K] matrix[K, D] beta_lt;
     for (i in 1:K) {
