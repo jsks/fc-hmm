@@ -20,11 +20,13 @@ consecutive <- function(years) {
 
 episodes <- function(v) {
     idx <- rev(v) |> cumsum() |> rev()
-    max(idx) - idx
+    1 + max(idx) - idx
 }
 
 ###
 # UCDP peace agreements (1975 - 2021)
+#     - inclusive == 1: Comprehensive peace agreement w/ all actors
+#     - pa_type == 1: Full peace agreement addressing conflict issues
 pce <- read_xlsx("./data/raw/ucdp-peace-agreements-221.xlsx") |>
     select(paid, year, conflict_id, pa_date, duration, inclusive, pa_type) |>
     separate_longer_delim(conflict_id, delim = ",") |>
@@ -43,8 +45,9 @@ pax.df <- group_by(pce, conflict_id, year) |>
 
 ###
 # Conflict Termination Dataset (1946 - 2020)
-#   3/4: Military Victory
-#   6: Actor Death
+#     Outcome:
+#       3/4 - Military Victory
+#       6 - Actor Death
 term <- read_xlsx("./data/raw/ucdp-term-acd-3-2021.xlsx") |>
     filter(type_of_conflict %in% 3:4, outcome %in% c(3, 4, 6)) |>
     select(conflict_id, year, confterm)
@@ -59,8 +62,8 @@ term.df <- full_join(pax.df, term, by = c("conflict_id", "year")) |>
 ged <- readRDS("./data/raw/GEDEvent_v23_1.rds")
 
 # We need the conflict_id for all civil conflict episodes
-conflicts <- readRDS("./data/raw/UcdpPrioConflict_v23_1.rds") |>
-    filter(type_of_conflict %in% 3:4) |>
+ucdp <- readRDS("./data/raw/UcdpPrioConflict_v23_1.rds")
+conflicts <- filter(ucdp, type_of_conflict %in% 3:4) |>
     distinct(conflict_id) |>
     pull(conflict_id)
 
@@ -95,23 +98,29 @@ con.df <- filter(term.df, conflict_id %in% conflicts) |>
 # If there is no termination, we assume (for now) that the conflict is
 # ongoing.
 reduced.df <- group_by(con.df, conflict_id) |>
-    arrange(desc(year)) |>
-    mutate(terminated = confterm == 1 | full_pax == 1,
-           idx = cumsum(terminated)) |>
-    filter(idx == max(idx), year <= 2021)
+    arrange(year) |>
+    mutate(consecutive = consecutive(year),
+           terminated = (confterm == 1 | full_pax == 1) & !consecutive,
+           episode_id = episodes(terminated)) |>
+    filter(year <= 2021)
 
 # Expand out the full grid, so that we also include conflict-years where BRD == 0
-seqs <- group_by(reduced.df, conflict_id) |>
+seqs <- group_by(reduced.df, conflict_id, episode_id) |>
     arrange(year) |>
     summarise(start = min(year),
               stop = ifelse(last(terminated) == 1, max(year), 2021))
 
-grid <- lapply(1:nrow(seqs), \(i) data.frame(conflict_id = seqs$conflict_id[i],
-                                             year = seqs$start[i]:seqs$stop[i])) |>
-    bind_rows()
+ll <- lapply(1:nrow(seqs), \(i) data.frame(conflict_id = seqs$conflict_id[i],
+                                           episode_id = seqs$episode_id[i],
+                                           year = seqs$start[i]:seqs$stop[i]))
+grid <- bind_rows(ll)
 
-final.df <- full_join(reduced.df, grid, by = c("conflict_id", "year")) |>
-    group_by(conflict_id) |>
+# Before combining, grab the ID for conflicts that started before our
+# dataset in 1989 according to UCDP/Prio ACD.
+censored <- filter(ucdp, year < 1989) |> pull(conflict_id)
+
+final.df <- full_join(reduced.df, grid, by = c("conflict_id", "episode_id", "year")) |>
+    group_by(conflict_id, episode_id) |>
     arrange(year) |>
     mutate(brd = replace_na(brd, 0),
            brd_low = replace_na(brd_low, 0),
@@ -119,6 +128,8 @@ final.df <- full_join(reduced.df, grid, by = c("conflict_id", "year")) |>
            cumbrd = cumsum(brd),
            high_intensity = sum(brd) >= 500,
            duration = 1:n(),
+           recurrent = episode_id > 1,
+           censored = ifelse(conflict_id %in% censored & episode_id == 1, 1, 0),
            side_a = first(side_a, na_rm = T),
            side_b = first(side_b, na_rm = T),
            full_pax = replace_na(full_pax, 0),
@@ -126,7 +137,6 @@ final.df <- full_join(reduced.df, grid, by = c("conflict_id", "year")) |>
            pax = ifelse(!is.na(pax), 1, 0),
            terminated = replace_na(terminated, F)) |>
     ungroup() |>
-    select(-idx) |>
     filter(high_intensity)
 
 ###
@@ -138,10 +148,10 @@ final.df <- full_join(reduced.df, grid, by = c("conflict_id", "year")) |>
 # Start by identifying sequences with indeterminate terminations as
 # candidates for manual adjustment.
 ged2022 <- select(ged, conflict_id = conflict_new_id, year) |> filter(year == 2022)
-spillover <- group_by(final.df, conflict_id) |>
+group_by(final.df, conflict_id, episode_id) |>
     filter(year == max(year), brd == 0, is.na(gwno_a), high_intensity,
            !conflict_id %in% ged2022$conflict_id) |>
-    select(conflict_id, side_a, side_b) |>
+    select(conflict_id, episode_id, side_a, side_b) |>
     write.csv("data/raw_candidates.csv", row.names = F)
 
 # Code the (possible) termination year for each candidate sequence
