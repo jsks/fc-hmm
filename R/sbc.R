@@ -2,23 +2,25 @@
 
 library(jsonlite)
 
-n <- 100
-k <- 2
+N <- 100
+K <- 2
 
-X <- rnorm(n, 0, 5)
+# Simulate X with a standard normal to prevent overflow in the gamma
+# rate in neg_binomial_2_log_rng
+X <- rnorm(N, 0, 1)
 
 n_conflicts <- 4
 conflict_starts <- c(1, 30, 45, 79)
 conflict_ends <- c(29, 44, 78, 100)
 
-mu_location <- c(0, 6.2)
-mu_scale <- c(1, 1)
+mu_location <- c(0, 6.9)
+mu_scale <- c(0.5, 0.5)
 
-stopifnot(length(mu_location) == k,
-          length(mu_scale) == k)
+stopifnot(length(mu_location) == K,
+          length(mu_scale) == K)
 
-stan_data <- list(N = n,
-                  K = k,
+stan_data <- list(N = N,
+                  K = K,
                   D = 1,
                   X = data.matrix(X),
                   n_conflicts = n_conflicts,
@@ -30,5 +32,5 @@ stan_data <- list(N = n,
                   mu_scale = mu_scale)
 str(stan_data)
 
-dir.create("json", showWarnings = F)
-write_json(stan_data, "json/sim.json", auto_unbox = T)
+dir.create("data/json", showWarnings = F)
+write_json(stan_data, "data/json/sbc.json", auto_unbox = T)
