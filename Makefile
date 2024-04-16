@@ -2,6 +2,7 @@ SHELL = /bin/bash -eo pipefail
 
 manuscript := paper.qmd
 raw        := data/raw
+json       := data/json
 
 # Escape codes for colourized output in `help` command
 blue   := \033[1;34m
@@ -12,16 +13,14 @@ reset  := \033[0m
 all: $(manuscript:.qmd=.pdf)
 .PHONY: build clean help preview wc
 
-build: json/hmm.json json/sim.json ## Build the Stan model container image
+build: $(json)/hmm.json $(json)/sbc.json ## Build the Stan model container image
 	podman build -t jsks/hmm --target=hmm . && \
 		podman build -t jsks/sbc --target=sbc .
 
 clean: ## Remove all generated files
 	rm -rf $(foreach ext, pdf docx html, $(manuscript:%.qmd=%.$(ext))) \
 		$(manuscript:%.qmd=%_files) $(manuscript:%.qmd=%.cache) \
-		data/merge_data.rds json
-
-data: json/hmm.json json/sim.json ## Generate data files
+		data/merge_data.rds $(json)
 
 help:
 	@printf 'To compile $(manuscript) as a pdf:\n\n'
@@ -52,12 +51,12 @@ data/sequences.rds: $(raw)/ucdp-peace-agreements-221.xlsx \
 data/merge_data.rds: data/sequences.rds \
 			$(raw)/V-Dem-CY-Full+Others-v14.rds \
 			$(raw)/Third-Party-PKMs-version-3.5.xls \
-			$(raw)/Conflict_onset_2022-1.xlsx \
+			$(raw)/CFD_oct_2022_id-1.xlsx \
 			$(raw)/import-export-values_1950-2023.csv \
 			R/merge.R
 	Rscript R/merge.R
 
-json/%.json: R/%.R data/merge_data.rds
+$(json)/%.json: R/%.R data/merge_data.rds
 	Rscript $<
 
 ###
