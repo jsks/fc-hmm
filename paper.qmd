@@ -297,7 +297,7 @@ log_normalize <- \(x) (x - min(x)) / (max(x) - min(x))
 dataset <- readRDS("./data/merge_data.rds") |>
     filter(high_intensity)
 
-files <- list.files("posteriors", "csv$", full.names = T)
+files <- list.files("posteriors", "^output_\\d.csv$", full.names = T)
 stopifnot(length(files) > 0)
 
 # This is using data.table::fread which needs R.utils installed to
@@ -363,7 +363,7 @@ abline(v = 0, lty = 2)
 Shortcomings:
 - Frozen conflict measure does not account for the ability of actors
   to re-escalate a conflict --- no distinction between a weakened
-  insurgency versus a de facto separatist state
+  insurgency versus a de facto separatist state (DOES NOT MEASURE REBEL CAPACITY)
 - Excluded low intensity conflicts
 
 Future work:
