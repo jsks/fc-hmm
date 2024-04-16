@@ -22,7 +22,8 @@ typeset -A opts
 zparseopts -A opts -D -E -F -- -help -sync-only
 [[ -v opts[--help] ]] && { usage; exit }
 
-proj="storage/$(date +'%F-%s')-$1"
+hash=$(date +'%s' | md5sum | cut -c1-5)
+proj="storage/$hash-$1-$(date +'%y-%m-%d-%H.%M.%S')"
 job_script="$1.sh"
 
 print "Running $1"
