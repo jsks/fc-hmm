@@ -1,0 +1,10 @@
+Package: fc.hmm
+Title: HMM project package
+Version: 0.0.0.9000
+Authors@R: 
+    person("Joshua", "Krusell",, "joshua.krusell@gu.se", rol = c("aut", "cre"))
+Description: Collection of utility functions.
+License: MIT
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
