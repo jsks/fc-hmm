@@ -4,17 +4,9 @@
 ###
 
 library(dplyr)
+library(fc.hmm)
 library(readxl)
 library(tidyr)
-
-window <- function(x, n) {
-    x <- c(rep(NA, n - 1), x)
-    lapply(1:(length(x) - n + 1), function(i) x[i:(i + n - 1)])
-}
-
-roll_mean <- function(x, n) {
-    window(x, n) |> lapply(mean, na.rm = T) |> unlist()
-}
 
 ###
 # Conflict sequences
@@ -63,7 +55,7 @@ vdem <- vdem |>
                                T ~ e_gdppc))
 
 ###
-# PKO Data
+# PKO Data (1946 - 2022)
 pko <- read_xls("./data/raw/Third-Party-PKMs-version-3.5.xls") |>
     select(idx = OBSNUM, COWcode = CCODE1, start = STARTYR, end = ENDYR) |>
     mutate(end = ifelse(is.na(end), 2021, end)) |>
@@ -73,6 +65,9 @@ pko <- read_xls("./data/raw/Third-Party-PKMs-version-3.5.xls") |>
 
 ###
 # Ceasefires (1989 - 2021)
+#   Filter full ceasefires (partial == 0) and exclude temporary
+#   holiday and humanitarian pauses as well as ceasefires that have
+#   not yet taken effect.
 ceasefires <- read_xlsx("./data/raw/CFD_oct_2022_id-1.xlsx") |>
     filter(ucdp_acd_id != -1, partial == 0, p_holiday == 0,
            p_humanitarian == 0, cf_effect_yr != 0) |>
@@ -116,6 +111,10 @@ final.df <- filter(model_data, year != 1989) |>
     mutate(ongoing = (sum(brd) - brd) >= 500) |>
     ungroup() |>
     arrange(conflict_id, year)
+
+info("Finished with %d conflict episodes and %d observations",
+     distinct(final.df, conflict_id, episode_id) |> nrow(),
+     nrow(final.df))
 
 # Save the final dataset
 saveRDS(final.df, "./data/merge_data.rds")

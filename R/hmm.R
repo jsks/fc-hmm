@@ -1,17 +1,12 @@
 #!/usr/bin/env Rscript
+#
+# Input data for HMM model
+###
 
 library(dplyr)
+library(fc.hmm)
 library(jsonlite)
 library(tools)
-
-normalize <- \(x) scale(x) |> as.vector()
-polynomial <- function(df, var, n) {
-    m <- poly(df[[var]], n)
-    colnames(m) <- paste(var, 1:n, sep = "_")
-    df[[var]] <- NULL
-
-    bind_cols(df, m)
-}
 
 ###
 # Load merged data

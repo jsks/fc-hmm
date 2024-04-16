@@ -5,23 +5,9 @@
 ###
 
 library(dplyr)
+library(fc.hmm)
 library(readxl)
 library(tidyr)
-
-printf <- function(...) sprintf(...) |> print()
-
-# Returns true if the years are consecutive
-consecutive <- function(years) {
-    if (length(years) == 1)
-        return(F)
-
-    replace_na(lead(years) - years == 1, F)
-}
-
-episodes <- function(v) {
-    idx <- rev(v) |> cumsum() |> rev()
-    1 + max(idx) - idx
-}
 
 ###
 # UCDP peace agreements (1975 - 2021)
@@ -42,6 +28,8 @@ pax.df <- group_by(pce, conflict_id, year) |>
     arrange(pa_date) |>
     slice(n()) |>
     select(conflict_id, year, pax = paid, full_pax)
+
+info("Loaded %d/%d full peace agreements", sum(pax.df$full_pax), nrow(pax.df))
 
 ###
 # Conflict Termination Dataset (1946 - 2020)
@@ -139,6 +127,10 @@ final.df <- full_join(reduced.df, grid, by = c("conflict_id", "episode_id", "yea
     ungroup() |>
     filter(high_intensity)
 
+n_added <- sum(is.na(final.df$gwno_a))
+info("Added %d/%d non-active years (%s%%) --- non-adjusted",
+     n_added, nrow(final.df), format(100 * n_added / nrow(final.df), digits = 3))
+
 ###
 # Manually adjust conflict ends for several conflicts that have
 # officially ended, but aren't picked up by our criteria. This
@@ -167,9 +159,9 @@ adjusted.df <- left_join(final.df, candidates, by = "conflict_id") |>
     filter(is.na(termination_year) | year <= termination_year) |>
     arrange(conflict_id, year)
 
-printf("Finished with %d conflicts and %d observations",
-       n_distinct(adjusted.df$conflict_id),
-       nrow(adjusted.df))
+info("Finished with %d conflict episodes and %d observations",
+     distinct(adjusted.df, conflict_id, episode_id) |> nrow(),
+     nrow(adjusted.df))
 
 ###
 # Lift your skinny fists like antennas to heaven and save!
