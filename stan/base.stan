@@ -41,7 +41,7 @@ transformed parameters {
 
             // Initialize forward probabilities
             for (i in 1:K)
-                Gamma[start, i] = log(pi[i]) + neg_binomial_2_log_lpmf(y[start] | X[1, ] * lambda[, i] + eta[conflict, i], phi[i]);
+                Gamma[start, i] = log(pi[i]) + neg_binomial_2_log_lpmf(y[start] | X[start, ] * lambda[, i] + eta[conflict, i], phi[i]);
 
             for (t in (start + 1):end) {
                 // Time-varying transition matrix (To x From), each
@@ -81,7 +81,7 @@ model {
     for (i in 1:K)
         target += normal_lpdf(mu[i] | mu_location[i], mu_scale[i]);
 
-    target += normal_lpdf(tau | 2, 0.25);
+    target += normal_lpdf(tau | 0, 0.25);
     for (conflict in 1:n_conflicts)
         target += std_normal_lpdf(eta_raw[conflict]);
 
