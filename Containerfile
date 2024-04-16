@@ -37,7 +37,7 @@ FROM gcr.io/distroless/cc-debian12 AS sbc
 COPY --from=cmdstan /cmdstan/bin/diagnose .
 COPY --from=cmdstan /cmdstan/sbc .
 COPY --from=cmdstan /cmdstan/stan/lib/stan_math/lib/tbb/libtbb.so.2 libtbb.so.2
-COPY json/sim.json .
+COPY data/json/sim.json .
 
 ENTRYPOINT ["/sbc", "data", "file=/sim.json", "sample"]
 
@@ -47,8 +47,8 @@ FROM gcr.io/distroless/cc-debian12 AS hmm
 COPY --from=cmdstan /cmdstan/bin/diagnose .
 COPY --from=cmdstan /cmdstan/hmm .
 COPY --from=cmdstan /cmdstan/stan/lib/stan_math/lib/tbb/libtbb.so.2 libtbb.so.2
-COPY json/hmm.json .
+COPY data/json/hmm.json .
 
-ENTRYPOINT ["/hmm", "data", "file=/hmm.json", "sample", "num_warmup=10000", \
-            "num_samples=10000", "thin=10", "adapt", "delta=0.95", \
-            "algorithm=hmc", "engine=nuts", "max_depth=12"]
+ENTRYPOINT ["/hmm", "data", "file=/hmm.json", "sample", "num_warmup=5000", \
+            "num_samples=2000", "thin=2", "adapt", "delta=0.95", \
+            "algorithm=hmc", "engine=nuts"]
