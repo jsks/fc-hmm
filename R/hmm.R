@@ -27,7 +27,7 @@ stopifnot(!anyNA(X))
 
 # Starts, ends for each conflict sequence
 conflicts <- mutate(df, row = row_number()) |>
-    group_by(conflict_id) |>
+    group_by(conflict_id, episode_id) |>
     summarise(start = first(row),
               end = last(row))
 
