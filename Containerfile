@@ -34,15 +34,21 @@ RUN STANCFLAGS="--include-paths /cmdstan" make -j$(nproc) bin/diagnose hmm sbc &
 # Simulation based calibration image
 FROM gcr.io/distroless/cc-debian12 AS sbc
 
+# This is unnecessary for the image, but it's nice to know exactly
+# which model code was run.
+COPY stan/*.stan .
+
 COPY --from=cmdstan /cmdstan/bin/diagnose .
 COPY --from=cmdstan /cmdstan/sbc .
 COPY --from=cmdstan /cmdstan/stan/lib/stan_math/lib/tbb/libtbb.so.2 libtbb.so.2
-COPY data/json/sim.json .
+COPY data/json/sbc.json .
 
-ENTRYPOINT ["/sbc", "data", "file=/sim.json", "sample"]
+ENTRYPOINT ["/sbc", "data", "file=/sbc.json", "sample"]
 
 # Hidden markov model image
 FROM gcr.io/distroless/cc-debian12 AS hmm
+
+COPY stan/*.stan .
 
 COPY --from=cmdstan /cmdstan/bin/diagnose .
 COPY --from=cmdstan /cmdstan/hmm .
