@@ -42,13 +42,17 @@ data <- list(N = nrow(df),
              conflict_ends = conflicts$end,
              X = data.matrix(X),
              y = df$brd,
-             mu_location = c(1, 4, 6.21),
-             mu_scale = c(1, 1, 1))
+             mu_location = c(0, 3.91, 6.91),
+             mu_scale = c(0.1, 0.1, 0.1))
 str(data)
 
 stopifnot(!anyNA(data))
 stopifnot(data$K == length(data$mu_location),
           data$K == length(data$mu_scale))
 
-dir.create("json", showWarnings = F)
-write_json(data, "json/hmm.json", auto_unbox = T)
+info("Variables: %s", paste0(colnames(X), collapse = ", "))
+info("N = %d, K = %d", data$N, data$K)
+info("BRD prior (location = %.2f, scale = %.2f)", exp(data$mu_location), data$mu_scale)
+
+dir.create("data/json", showWarnings = F)
+write_json(data, "data/json/hmm.json", auto_unbox = T)
