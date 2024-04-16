@@ -53,7 +53,7 @@ transformed data {
     for (i in 1:K) {
         for (j in 1:K) {
             for (d in 1:D)
-                beta_sim[i, j, d] = normal_rng(0, 2.5);
+                beta_sim[i, j, d] = std_normal_rng();
         }
     }
 
@@ -61,7 +61,7 @@ transformed data {
     matrix[D, K] lambda_sim;
     for (i in 1:D) {
         for (j in 1:K)
-            lambda_sim[i, j] = normal_rng(0, 2.5);
+            lambda_sim[i, j] = std_normal_rng();
     }
 
     // Partially pooled transition intercepts
@@ -70,8 +70,8 @@ transformed data {
 
     for (i in 1:K) {
         for (j in 1:K) {
-            sigma_sim[i, j] = abs(normal_rng(0, 0.5));
             nu_sim[i, j] = student_t_rng(3, 0, 1);
+            sigma_sim[i, j] = abs(normal_rng(0, 0.25));
         }
     }
 
@@ -89,7 +89,7 @@ transformed data {
     vector<lower=0>[K] tau_sim;
     for (i in 1:K) {
         mu_sim[i] = normal_rng(mu_location[i], mu_scale[i]);
-        tau_sim[i] = abs(normal_rng(0, 0.5));
+        tau_sim[i] = abs(normal_rng(0, 0.25));
     }
     mu_sim = sort_asc(mu_sim);
 
