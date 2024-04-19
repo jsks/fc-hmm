@@ -23,7 +23,7 @@ parameters {
     vector<lower=0>[K] tau;
 
     // Negative binomial overdispersion parameter
-    vector<lower=0>[K] phi;
+    real<lower=0> phi;
 }
 
 transformed parameters {
@@ -41,7 +41,7 @@ transformed parameters {
 
             // Initialize forward probabilities
             for (i in 1:K)
-                Gamma[start, i] = log(pi[i]) + neg_binomial_2_log_lpmf(y[start] | X[start, ] * lambda[, i] + eta[conflict, i], phi[i]);
+                Gamma[start, i] = log(pi[i]) + neg_binomial_2_log_lpmf(y[start] | X[start, ] * lambda[, i] + eta[conflict, i], phi);
 
             for (t in (start + 1):end) {
                 // Time-varying transition matrix (To x From), each
@@ -56,7 +56,7 @@ transformed parameters {
                     // Transitioning from state i -> j
                     Gamma[t, j] = log_sum_exp(Gamma[t - 1] +
                                               Omega[, j] +
-                                              neg_binomial_2_log_lpmf(y[t] | X[t, ] * lambda[, j] + eta[conflict, j], phi[j]));
+                                              neg_binomial_2_log_lpmf(y[t] | X[t, ] * lambda[, j] + eta[conflict, j], phi));
             }
         }
     }

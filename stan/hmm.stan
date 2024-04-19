@@ -54,7 +54,7 @@ generated quantities {
                     // Transition from i -> j
                     for (j in 1:K)
                         aux[j] = Gamma_backward[t + 1, j] + Omega[i, j] +
-                                  neg_binomial_2_log_lpmf(y[t + 1] | X[t+1, ] * lambda[, j] + eta[conflict, j], phi[j]);
+                                  neg_binomial_2_log_lpmf(y[t + 1] | X[t+1, ] * lambda[, j] + eta[conflict, j], phi);
 
                     Gamma_backward[t, i] = log_sum_exp(aux);
                 }
@@ -69,6 +69,6 @@ generated quantities {
     for (i in 1:N) {
         Zprob[i] = exp(Gamma[i] + Gamma_backward[i] - log_lik[conflict_id[i]]);
         Zhat[i] = categorical_rng(Zprob[i]);
-        yhat[i] = neg_binomial_2_log_rng(X[i, ] * lambda[, Zhat[i]] + eta[conflict_id[i], Zhat[i]], phi[Zhat[i]]);
+        yhat[i] = neg_binomial_2_log_rng(X[i, ] * lambda[, Zhat[i]] + eta[conflict_id[i], Zhat[i]], phi);
     }
 }

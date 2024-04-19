@@ -44,9 +44,7 @@ transformed data {
     simplex[K] pi_sim = dirichlet_rng(rep_vector(1, K));
 
     // Dispersion parameter for negative binomial
-    vector<lower=0>[K] phi_sim;
-    for (i in 1:K)
-       phi_sim[i] = gamma_rng(2, 0.1);
+    real<lower=0> phi_sim = gamma_rng(2, 0.1);
 
     // Covariate coefficients for transition matrix
     array[K] matrix[K, D] beta_sim;
@@ -71,7 +69,7 @@ transformed data {
     for (i in 1:K) {
         for (j in 1:K) {
             nu_sim[i, j] = student_t_rng(3, 0, 1);
-            sigma_sim[i, j] = abs(normal_rng(0, 0.25));
+            sigma_sim[i, j] = abs(normal_rng(0, 0.1));
         }
     }
 
@@ -89,7 +87,7 @@ transformed data {
     vector<lower=0>[K] tau_sim;
     for (i in 1:K) {
         mu_sim[i] = normal_rng(mu_location[i], mu_scale[i]);
-        tau_sim[i] = abs(normal_rng(0, 0.25));
+        tau_sim[i] = abs(normal_rng(0, 0.1));
     }
     mu_sim = sort_asc(mu_sim);
 
@@ -108,14 +106,14 @@ transformed data {
                 end = conflict_ends[conflict];
 
             S[start] = categorical_rng(pi_sim);
-            y[start] = neg_binomial_2_log_rng(X[start,] * lambda_sim[, S[start]] + eta_sim[conflict,S[start]], phi_sim[S[start]]);
+            y[start] = neg_binomial_2_log_rng(X[start,] * lambda_sim[, S[start]] + eta_sim[conflict,S[start]], phi_sim);
 
             for (t in (start + 1):end) {
                 // K x 1 + K x D \times D x 1 -> K x 1
                 vector[K] p = softmax(zeta_sim[conflict][, S[t-1]] + beta_sim[S[t-1]] * X[t, ]');
 
                 S[t] = categorical_rng(p);
-                y[t] = neg_binomial_2_log_rng(X[t, ] * lambda_sim[, S[t]] + eta_sim[conflict,S[t]], phi_sim[S[t]]);
+                y[t] = neg_binomial_2_log_rng(X[t, ] * lambda_sim[, S[t]] + eta_sim[conflict,S[t]], phi_sim);
             }
         }
     }
@@ -125,7 +123,7 @@ transformed data {
 
 generated quantities {
     vector[K] pi_lt = rank(pi, pi_sim);
-    vector[K] phi_lt = rank(phi, phi_sim);
+    int phi_lt = phi < phi_sim;
 
     array[K] matrix[K, D] beta_lt;
     for (i in 1:K) {
