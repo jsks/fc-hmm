@@ -36,3 +36,17 @@ polynomial <- function(df, var, n) {
 
     bind_cols(df, m)
 }
+
+#' @export
+to_idx <- function(...) {
+    allEqual <- \(x) length(unique(x)) == 1
+
+    args <- list(...)
+    if (!sapply(args, length) |> allEqual())
+        stop("All arguments must have the same length")
+
+    s <- do.call(paste, args)
+    lvls <- unique(s)
+
+    factor(s, levels = lvls) |> as.integer()
+}
