@@ -14,7 +14,16 @@ Logical vector indicating non-consecutive breaks
 }
 \description{
 Given a numeric vector, returns a logical vector indicating whether
-each vector element is consecutive with the previous element.
+each vector element is consecutive with the next element.
+}
+\details{
+This is used to as part of the process to identify if a termination
+in the form of a coded military victory or peace agreement is
+followed by continued violence in the next year.
+
+Note, the last element in the vector is always considered to be
+non-consecutive. Also, \code{consecutive} does not sort the argument
+vector.
 }
 \examples{
 consecutive(c(1900, 1901, 1903, 1904))

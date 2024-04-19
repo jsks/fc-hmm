@@ -15,9 +15,11 @@ Integer vector of grouping indices
 \description{
 Given a logical vector, return a vector of the same length with the
 indices for each group of of consecutive FALSE values terminated by
-the first TRUE value. This is used to identify conflict episodes
-given a vector indicating whether a conflict-year has experienced a
-termination.
+the first TRUE value.
+}
+\details{
+This is used to identify conflict episodes given a vector
+indicating whether a conflict-year has experienced a termination.
 }
 \examples{
 group_breaks(c(T, F, F, T, F))

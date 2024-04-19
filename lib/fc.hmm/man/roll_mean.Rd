@@ -4,12 +4,14 @@
 \alias{roll_mean}
 \title{Rolling mean}
 \usage{
-roll_mean(x, n)
+roll_mean(x, n, permit.na = T)
 }
 \arguments{
 \item{x}{Numeric vector for rolling mean}
 
 \item{n}{Window size}
+
+\item{permit.na}{Logical indicating whether to permit NA values in \code{x}}
 }
 \description{
 Calculate the left-inclusive rolling mean with a \code{n} size window.

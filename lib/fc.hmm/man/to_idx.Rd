@@ -4,19 +4,23 @@
 \alias{to_idx}
 \title{Unique integer indices}
 \usage{
-to_idx(...)
+to_idx(..., sort = F)
 }
 \arguments{
-\item{`...`}{Vectors of the same length}
+\item{sort}{Logical, whether to sort unique levels prior to indexing}
+
+\item{`...`}{Input vectors of the same length}
 }
 \value{
 Integer vector of the same length as vector arguments.
 }
 \description{
-Returns the indices for the unique combinations of vector
-arguments. This is used to create an index variable based on
-\code{conflict_id} and \code{episode_id} in order to uniquely identify years
-within a specific conflict-episode.
+Create a unique index for the combination of vector arguments.
+}
+\details{
+This is used to create an index variable based on \code{conflict_id} and
+\code{episode_id} in order to uniquely identify years within a specific
+conflict-episode.
 }
 \examples{
 to_idx(c(1, 1, 2, 2), c(1, 2, 1, 2))
