@@ -51,7 +51,7 @@ transformed parameters {
                     // K x 1 + K x D * D x 1 -> K x 1
                     Omega[i, ] = log_softmax(zeta[conflict][, i] + beta[i] * X[t, ]')';
 
-                // Forward log-probabilities, log p(y_1, ..., y_t, Z_t = j)
+                // Forward log-probability, log p(y_1, ..., y_t, Z_t = j)
                 for (j in 1:K)
                     // Transitioning from state i -> j
                     Gamma[t, j] = log_sum_exp(Gamma[t - 1] +
@@ -67,13 +67,13 @@ model {
     target += dirichlet_lpdf(pi | rep_vector(1, K));
     target += gamma_lpdf(phi | 2, 0.1);
     for (i in 1:K)
-        target += normal_lpdf(to_vector(beta[i]) | 0, 2.5);
+        target += std_normal_lpdf(to_vector(beta[i]));
 
-    target += normal_lpdf(to_vector(lambda) | 0, 1);
+    target += std_normal_lpdf(to_vector(lambda));
 
     // Partially pooled transition intercepts
     target += student_t_lpdf(to_vector(nu) | 3, 0, 1);
-    target += normal_lpdf(to_vector(sigma) | 0, 0.25);
+    target += normal_lpdf(to_vector(sigma) | 0, 0.1);
     for (conflict in 1:n_conflicts)
         target += std_normal_lpdf(to_vector(zeta_raw[conflict]));
 
@@ -81,7 +81,7 @@ model {
     for (i in 1:K)
         target += normal_lpdf(mu[i] | mu_location[i], mu_scale[i]);
 
-    target += normal_lpdf(tau | 0, 0.25);
+    target += normal_lpdf(tau | 0, 0.1);
     for (conflict in 1:n_conflicts)
         target += std_normal_lpdf(eta_raw[conflict]);
 
