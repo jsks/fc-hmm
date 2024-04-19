@@ -13,6 +13,9 @@ library(tidyr)
 # UCDP peace agreements (1975 - 2021)
 #     - inclusive == 1: Comprehensive peace agreement w/ all actors
 #     - pa_type == 1: Full peace agreement addressing conflict issues
+#
+# We also check that the peace agreement is still in effect within at
+# least one calendar year.
 pce <- read_xlsx("./data/raw/ucdp-peace-agreements-221.xlsx") |>
     select(paid, year, conflict_id, pa_date, duration, inclusive, pa_type) |>
     separate_longer_delim(conflict_id, delim = ",") |>
@@ -89,7 +92,7 @@ reduced.df <- group_by(con.df, conflict_id) |>
     arrange(year) |>
     mutate(consecutive = consecutive(year),
            terminated = (confterm == 1 | full_pax == 1) & !consecutive,
-           episode_id = episodes(terminated)) |>
+           episode_id = group_breaks(terminated)) |>
     filter(year <= 2021)
 
 # Expand out the full grid, so that we also include conflict-years where BRD == 0
@@ -157,11 +160,12 @@ candidates <- read.csv("./data/candidates.csv") |>
 # Finally, merge back the manually adjusted termination years
 adjusted.df <- left_join(final.df, candidates, by = "conflict_id") |>
     filter(is.na(termination_year) | year <= termination_year) |>
-    arrange(conflict_id, year)
+    arrange(conflict_id, year) |>
+    mutate(unit_id = to_idx(conflict_id, episode_id)) |>
+    select(unit_id, conflict_id, episode_id, year, everything())
 
 info("Finished with %d conflict episodes and %d observations",
-     distinct(adjusted.df, conflict_id, episode_id) |> nrow(),
-     nrow(adjusted.df))
+     n_distinct(adjusted.df$unit_id), nrow(adjusted.df))
 
 ###
 # Lift your skinny fists like antennas to heaven and save!

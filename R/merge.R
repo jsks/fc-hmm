@@ -112,9 +112,10 @@ final.df <- filter(model_data, year != 1989) |>
     ungroup() |>
     arrange(conflict_id, year)
 
+stopifnot(!anyNA(final.df$unit_id))
+
 info("Finished with %d conflict episodes and %d observations",
-     distinct(final.df, conflict_id, episode_id) |> nrow(),
-     nrow(final.df))
+     n_distinct(final.df$unit_id), nrow(final.df))
 
 # Save the final dataset
 saveRDS(final.df, "./data/merge_data.rds")

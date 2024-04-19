@@ -11,7 +11,7 @@ library(tools)
 ###
 # Load merged data
 df <- readRDS("data/merge_data.rds") |>
-    arrange(conflict_id, year)
+    arrange(unit_id, year)
 
 # Time-varying covariates affecting transition probabilities.
 X <- select(df, tiv_1, ceasefire, pko, ongoing, v2x_polyarchy,
@@ -27,7 +27,7 @@ stopifnot(!anyNA(X))
 
 # Starts, ends for each conflict sequence
 conflicts <- mutate(df, row = row_number()) |>
-    group_by(conflict_id, episode_id) |>
+    group_by(unit_id) |>
     summarise(start = first(row),
               end = last(row))
 
@@ -36,8 +36,8 @@ conflicts <- mutate(df, row = row_number()) |>
 data <- list(N = nrow(df),
              K = 3,
              D = ncol(X),
-             n_conflicts = n_distinct(df$conflict_id),
-             conflict_id = as.factor(df$conflict_id) |> as.numeric(),
+             n_conflicts = n_distinct(df$unit_id),
+             conflict_id = unit_id,
              conflict_starts = conflicts$start,
              conflict_ends = conflicts$end,
              X = data.matrix(X),
