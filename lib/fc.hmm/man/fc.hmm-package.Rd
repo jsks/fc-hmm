@@ -6,7 +6,8 @@
 \alias{fc.hmm-package}
 \title{fc.hmm}
 \description{
-Utility functions
+Utility functions used in the R scripts for this project placed
+into a separate package for isolation and testing.
 }
 \author{
 \strong{Maintainer}: Joshua Krusell \email{joshua.krusell@gu.se}

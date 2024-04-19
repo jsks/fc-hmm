@@ -1,10 +1,15 @@
 Package: fc.hmm
 Title: HMM project package
 Version: 0.0.0.9000
-Authors@R: 
+Authors@R:
     person("Joshua", "Krusell",, "joshua.krusell@gu.se", rol = c("aut", "cre"))
-Description: Collection of utility functions.
+Description: Collection of utility functions for the Frozen Conflict - HMM project.
 License: MIT
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Imports:
+    dplyr
