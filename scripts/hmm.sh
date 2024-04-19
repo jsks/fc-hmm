@@ -1,12 +1,12 @@
 #!/bin/bash
 #
 #SBATCH -J hmm
-#SBATCH -t 08:00:00
+#SBATCH -t 04:00:00
 #SBATCH -n 4
 #SBATCH --mail-type=ALL
 
-ncores=4
+echo "Starting HMM job at $(date)"
 
-apptainer run --bind $PWD:/data hmm.sif num_chains=$ncores num_threads=$ncores \
+apptainer run --bind $PWD:/data hmm.sif num_chains=4 num_threads=4 \
           output sig_figs=4 file=/data/output.csv
-apptainer exec --bind $PWD:/data hmm.sif /diagnose /data/output_{1..$ncores}.csv
+apptainer exec --bind $PWD:/data hmm.sif /diagnose /data/output_{1..4}.csv
