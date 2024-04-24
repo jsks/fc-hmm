@@ -23,6 +23,9 @@ X <- select(df, tiv_1, ceasefire, pko, ongoing, v2x_polyarchy,
            e_gdppc = log(e_gdppc)) |>
     mutate(across(c(tiv_1, e_pop, e_gdppc), normalize))
 
+# We assume throughout the project that our primary variable of
+# interest is always the first column in the covariate matrix.
+stopifnot(colnames(X)[1] == "tiv_1")
 stopifnot(!anyNA(X))
 
 # Starts, ends for each conflict sequence
