@@ -10,8 +10,12 @@ library(tidyr)
 
 ###
 # Conflict sequences
-df <- readRDS("./data/sequences.rds") |>
-    filter(conflict_id != 418) |>
+raw <- readRDS("./data/sequences.rds") |>
+    group_by(unit_id) |>
+    filter(n() > 1) |>
+    ungroup()
+
+df <- filter(raw, conflict_id != 418) |>
     mutate(side_a = case_when(side_a == "Myanmar (Burma)" ~ "Myanmar",
                               side_a == "Russia (Soviet Union)" & year <= 1991 ~ "Soviet Union",
                               side_a == "Russia (Soviet Union)" & year > 1991 ~ "Russia",
