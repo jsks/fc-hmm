@@ -4,11 +4,14 @@ data/
 json/
 plots/
 posteriors/
+*.Rcheck/
 stan/*
 !stan/*.stan
 
 .\#*
 .Rhistory
+*.o
+*.so
 .token.gpg
 *.~undo-tree~
 
