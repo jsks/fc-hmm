@@ -7,9 +7,9 @@
 to_idx(..., sort = F)
 }
 \arguments{
-\item{sort}{Logical, whether to sort unique levels prior to indexing}
+\item{...}{Input vectors of the same length}
 
-\item{`...`}{Input vectors of the same length}
+\item{sort}{Logical, whether to sort unique levels prior to indexing}
 }
 \value{
 Integer vector of the same length as vector arguments.

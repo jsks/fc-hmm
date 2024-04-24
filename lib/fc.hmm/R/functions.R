@@ -29,7 +29,7 @@ consecutive.numeric <- function(x) {
     if (length(x) == 1)
         return(F)
 
-    v <- (lead(x) - x) == 1
+    v <- (dplyr::lead(x) - x) == 1
     ifelse(is.na(v), F, v)
 }
 
@@ -47,7 +47,7 @@ consecutive.numeric <- function(x) {
 #' @return Integer vector of grouping indices
 #'
 #' @examples
-#' group_breaks(c(T, F, F, T, F))
+#' group_breaks(c(TRUE, FALSE, FALSE, TRUE, FALSE))
 #'
 #' @export
 group_breaks <- function(x) UseMethod("group_breaks")
@@ -133,7 +133,7 @@ roll_mean.numeric <- function(x, n, permit.na = T) {
 #' `episode_id` in order to uniquely identify years within a specific
 #' conflict-episode.
 #'
-#' @param `...` Input vectors of the same length
+#' @param ... Input vectors of the same length
 #' @param sort Logical, whether to sort unique levels prior to indexing
 #'
 #' @return Integer vector of the same length as vector arguments.

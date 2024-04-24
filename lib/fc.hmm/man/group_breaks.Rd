@@ -22,6 +22,6 @@ This is used to identify conflict episodes given a vector
 indicating whether a conflict-year has experienced a termination.
 }
 \examples{
-group_breaks(c(T, F, F, T, F))
+group_breaks(c(TRUE, FALSE, FALSE, TRUE, FALSE))
 
 }
