@@ -1,6 +1,6 @@
 Package: fc.hmm
 Title: HMM project package
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R:
     person("Joshua", "Krusell",, "joshua.krusell@gu.se", rol = c("aut", "cre"))
 Description: Collection of utility functions for the Frozen Conflict - HMM project.
