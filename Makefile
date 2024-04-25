@@ -4,6 +4,10 @@ manuscript := paper.qmd
 raw        := data/raw
 json       := data/json
 
+post        := posteriors
+fits        := $(patsubst %,$(post)/output_%.csv,$(shell seq 1 4))
+transitions != printf "$(post)/transitions/prob_%d.rds\n" {1..3}{1..3}
+
 # Escape codes for colourized output in `help` command
 blue   := \033[1;34m
 green  := \033[0;32m
@@ -60,10 +64,16 @@ $(json)/%.json: R/%.R data/merge_data.rds
 	Rscript $<
 
 ###
+# Post-processing
+$(transitions) &: $(fits)
+	Rscript R/effects.R
+
+###
 # Manuscript targets
 $(foreach ext, pdf docx html, $(manuscript:%.qmd=%.$(ext))): \
 	data/merge_data.rds \
-	fit.rds
+	$(fits) \
+	$(transitions)
 
 %.docx: %.qmd
 	quarto render $< --to docx
