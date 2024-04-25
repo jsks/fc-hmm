@@ -60,7 +60,7 @@ posterior_transitions.CmdStanFit <- function(fit,
     zeta <- fit$draws("zeta", format = "matrix") |>
         posterior::subset_draws(sprintf("^zeta\\[\\d+,%d,", from), regex = T)
 
-    beta.ll <- lapply(1:ndraws, \(m) matrix(beta[m, ], K, D - 1))
+    beta.ll <- lapply(1:ndraws, \(m) matrix(beta[m, ], K, D))
     zeta.ll <- lapply(1:ndraws, function(m) {
         z <- matrix(0, nrow(X), 3)
         for (i in 1:3) {
