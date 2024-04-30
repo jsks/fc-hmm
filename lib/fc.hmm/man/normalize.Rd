@@ -9,7 +9,16 @@ normalize(x)
 \arguments{
 \item{x}{Numeric vector to re-scale}
 }
+\value{
+Re-scaled numeric vector
+}
 \description{
 Convenience wrapper to \code{scale} that returns a numeric vector after
 applying standard score normalization.
+}
+\details{
+The transformation is defined as \eqn{\frac{(x - \text{mean}(x))}{\text{sd}(x)}}
+}
+\seealso{
+\code{\link[=min_max]{min_max()}}, \code{\link[=scale]{scale()}}
 }

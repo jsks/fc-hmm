@@ -22,6 +22,11 @@ test_that("group_breaks", {
     expect_error(group_breaks(1))
 })
 
+test_that("min_max", {
+    expect_identical(min_max(1:10), c(0, 1:8/9, 1))
+    expect_error(min_max(letters))
+})
+
 test_that("roll_mean", {
     expect_identical(roll_mean(1:5, 3), c(1, 1.5, 2, 3, 4))
     expect_identical(roll_mean(1:5, 2), c(1, 1.5, 2.5, 3.5, 4.5))

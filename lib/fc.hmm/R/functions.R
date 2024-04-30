@@ -61,6 +61,20 @@ group_breaks.logical <- function(x) {
     1 + max(idx) - idx
 }
 
+#' Min-max normalization
+#'
+#' This function applies min-max normalization to constrain a numeric
+#' vector between [0, 1].
+#'
+#' @param x Numeric vector to re-scale
+#'
+#' @details The transformation is defined as \eqn{\frac{(x - min(x))}{(max(x) - min(x))}}
+#' @return Re-scaled numeric vector
+#'
+#' @seealso [normalize()]
+#' @export
+min_max <- \(x) (x - min(x)) / (max(x) - min(x))
+
 #' Standard score normalization
 #'
 #' Convenience wrapper to `scale` that returns a numeric vector after
@@ -68,6 +82,10 @@ group_breaks.logical <- function(x) {
 #'
 #' @param x Numeric vector to re-scale
 #'
+#' @details The transformation is defined as \eqn{\frac{(x - \text{mean}(x))}{\text{sd}(x)}}
+#' @return Re-scaled numeric vector
+#'
+#' @seealso [min_max()], [scale()]
 #' @export
 normalize <- \(x) scale(x) |> as.vector()
 
