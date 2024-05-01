@@ -5,7 +5,7 @@
 # excluding appendix and code blocks.
 ###
 
-set -eo pipefail
+set -e
 
 if [[ $# -ne 1 ]]; then
     printf "Missing file argument\n" >&2
