@@ -1,5 +1,6 @@
 ---
-title: "Arms Transfers and Frozen Conflict Dynamics"
+title: "Estimating Frozen States in Civil Conflicts"
+subtitle: "A Latent Variable Approach"
 authors:
 - name: J.L.A. Krusell
   email: "joshua.krusell@gu.se"
@@ -254,6 +255,8 @@ TODO: There are a host of additional time-varying predictors that I can include.
 
 # Results
 
+## Predicted vs actual deaths
+
 Because of non-linear model, empirical estimands
 
 average posterior predicted probability for transitioning from state $j$ to state $k$ for some constant TIV value across all transition cases.
@@ -291,11 +294,10 @@ After fitting the model using Hamiltonian Monte Carlo, @fig-active-prob shows th
 
 library(cmdstanr)
 library(dplyr)
+library(ggplot2)
+library(tidyr)
 
-log_normalize <- \(x) (x - min(x)) / (max(x) - min(x))
-
-dataset <- readRDS("./data/merge_data.rds") |>
-    filter(high_intensity)
+dataset <- readRDS("./data/merge_data.rds")
 
 files <- list.files("posteriors", "^output_\\d.csv$", full.names = T)
 stopifnot(length(files) > 0)
@@ -304,8 +306,43 @@ stopifnot(length(files) > 0)
 # read compressed files.
 fit <- as_cmdstan_fit(files)
 
-Z_prob <- fit$draws("Z_prob", format = "matrix")
-active_state <- Z_prob[, sprintf("Z_prob[%d,2]", 1:nrow(dataset))]
+Zprob <- fit$draws("Gamma", format = "matrix") |> apply(2, median)
+K <- fit$metadata()$stan_variable_sizes$beta[1]
+for (i in 1:K) {
+    state_regex <- \(i) sprintf("^Gamma\\[\\d+,%d\\]$", i)
+    dataset[paste0("Zprob", i)] <- exp(Zprob[grepl(state_regex(i), names(Zprob))])
+}
+
+dataset$yhat <- fit$draws("yhat", format = "matrix") |> apply(2, median)
+
+df <- select(dataset, unit_id, year, brd, yhat, matches("Zprob")) |>
+    pivot_longer(cols = starts_with("Zprob"), names_to = "Z", values_to = "prob") |>
+    mutate(Z = sub("^Zprob", "", Z) |> factor(levels = 3:1)) |>
+    group_by(unit_id, year) |>
+    mutate(prob = prob / sum(prob))
+
+sub.df <- filter(df, unit_id == 63)
+
+ggplot(sub.df, aes(year, brd, col = "Observed")) +
+    geom_point() +
+    geom_point(aes(year, yhat, col = "Predicted")) +
+    geom_bar(aes(year, prob, fill = Z), stat = "identity", position = "stack", alpha = 0.6)
+
+max_observed <- max(sub.df$brd)
+scaling_factor <- 1 / max_observed
+
+# Plot the stacked bar plot with the secondary y-axis
+ggplot() +
+  # Stacked bar plot (background)
+  geom_tile(data = sub.df, aes(x = year, y = prob, fill = Z),
+           stat = "identity", position = "stack", alpha = 0.2, width = 1) +
+  # Observed count as points (overlay, scaled down to match y-axis)
+    geom_point(data = sub.df, aes(x = year, y = brd * scaling_factor, col = "Observed")) +
+    geom_point(data = sub.df, aes(year, yhat * scaling_factor, col = "Predicted")) +
+  # Primary y-axis (for the probability simplex)
+  scale_y_continuous(name = "Probability Simplex", sec.axis = sec_axis(~ . / scaling_factor, name = "Observed Count")
+                     )  +
+    theme_tufte()
 
 conflicts <- c(394, 388, 352, 401)
 par(mfrow = c(2, 2))
