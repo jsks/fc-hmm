@@ -9,7 +9,7 @@
 # Compile Stan models
 FROM debian:12 AS cmdstan
 
-ARG CMDSTAN_VERSION=2.34.1
+ARG CMDSTAN_VERSION=2.35.0
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
