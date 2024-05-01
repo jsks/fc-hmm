@@ -22,378 +22,81 @@ format:
 execute:
     cache: true
     echo: false
-abstract: |
-    *Why and when do some frozen conflicts re-escalate back into active conflicts?*
-    By definition, frozen conflicts are unresolved conflicts characterized by
-    ongoing tensions between belligerents with an ever-present risk of violent
-    re-escalation. And yet, there is significant variation in the patterns of
-    escalation and de-escalation across frozen conflicts. This paper examines one
-    possible factor, international arms transfers to government forces, as a
-    possible explainer for why some frozen conflicts are relatively dormant across
-    long periods of time, while others undergo periods of intense violent
-    instability. To investigate this quantitatively, I use a bespoke, bayesian
-    hidden markov model that treats frozen conflicts as a latent, unobserved
-    variable and models the transition probability between escalation and
-    de-escalation using a set of observed covariates. Preliminary results indicate
-    that arms transfers are relatively uninformative for measuring the dynamics of
-    frozen conflicts. __Word Count__: 2715
 ---
 
-Central research Question:
+# Introduction
 
-How do international arms transfers to incumbent governments affect the dynamics of civil conflict?
-    - How do international arms transfers affect the probability of civil conflicts transitioning between frozen & active
+Civil conflicts are dynamics processes that may underfo several waves of escalation and de-escalation in intensity as the conflict oscillates between active and inactive phases of combat.
 
-one-sided international arms transfers
+Identifying these periods is a crucial first step towards examining why certain conflicts become frozen
 
-Moving beyond operationalizing conflict episodes as discrete events separated by drops below an arbitrary threshold in the number of battle related fatalities.
+Civil conflict as a dynaic process with several wabes of escalation and de-escalation
 
-A key feature of frozen conflicts is an ongoing risk for violent thawing. By definition, frozen conflicts feature an underlying incompatibility that remains unresolved, which can serve as a catalyst for future violence [@smetana_between_2019]. Despite this risk being present across all frozen conflicts, there is nonetheless substantial variation in terms of if and when frozen conflicts do escalate, and potentially re-freeze. Some conflicts will undergo multiple waves of escalation and de-escalation, whereby the conflict swings between being frozen and active. For example, the previous dispute over Nagorno-Karabakh in Azerbaijan featured a high intensity war in the early 1990s during the breakdown of the Soviet Union followed by a long period of being frozen with brief, sporadic incidences of violence until the full-blown reignition of the Second Nagorno-Karabakh War in 2020. This was followed by yet another ceasefire, and the de-escalation of hostilities, until the 2023 Azerbaijani offensive, which forcefully reintegrated the previously *de facto* independent territory. In contrast, the frozen conflict involving the self-declared breakaway Pridnestrovian Moldovan Republic has laid dormant for decades since the initial Transnistria War with little indication of either re-escalating or terminating.
+  - How/why conflicts transition in and out of states of being frozen
+    is still underexplored by researchers
 
-Thus, there remains the question, why are some frozen conflicts characterized by a significant degree of violent instability, while others remain relatively static? And, what are some of the factors that can explain these periods of escalation and de-escalation that some frozen conflicts experience? I decide to focus on the international dimension of frozen conflicts by specifically analyzing the impact of international arms transfers to government forces on the probability that frozen conflicts transition between being active and frozen.
+"Why and when do some frozen conflicts re-escalate back into active conflicts?"
 
-In terms of theory, I argue that frozen conflicts can be thought of as a balance of power between belligerents who are unable to achieve a military advantage, but unwilling to agree to a bargained solution ending the conflict. Re-escalations occur when an actor perceives that the balance of power has shifted in their favor such that they can relitigate the conflict in hopes of achieving a favourable outcome. Furthermore, I specifically argue that the risk of re-escalation should be highest when the balance of power shifts in favor of the government. Territorial conflicts, where the opposition is either seeking independence or greater autonomy within a country, are the most prone to becoming frozen. States tend to prioritize territorial integrity such that the government faces a strong incentive to re-escalate the conflict and attempt a military victory when the balance of power shifts in their power. This can occur when the government is able to successfully procure arms from other actors, bolstering their military capacity.
+  - To be able to answer these questions we need to be able to
+    identify patterns of escalation and de-escalation
 
-To investigate the potential impact of international arms transfers on the probability of frozen conflicts transitioning between being active and frozen, I conduct a quantitative analysis using a hidden markov model that treats the actual state of a conflict as a hidden stochastic process that can be inferred by the number of yearly battle related deaths. Using data on international arms transfers from SIPRI, I then relate the primary variable of interest to the time varying transition probability matrix for these latent states.
+In this article I propose a latent variable approach that treats the state of a conflict at a given time period as an unobserved variable
 
-Preliminary results indicate that arms transfers are relatively uninformative for understanding the dynamics of frozen conflicts. However, there is still substantial work to be down in terms of formally verifying the model and investigating how the theoretical effect of arms transfers can be better modeled. Also, a decision needs to be made whether this paper should be a methodological "measurement" paper with a practical analysis example, or an empirical paper focused on arms transfers as a form of external support and how that may affect frozen conflict dynamics.
+  - Evolves as a discrete markov process whose transition
+    probabilities between frozen and active states is a time varying
+    function of a set of covariates.
 
-# Research Design
+"By incorporating time varying covariates and hierarchical structures, the model captures the complex dynamics of conflict escalation and de-escalation, accounting for both short-term fluctuations and long-term trends."
 
-TODO: 3 state model, no restriction on transitions (ie 1 -> 3 and 1 -> 2)
+This stands in direct contrast to the standard approach of coding frozen conflicts, and distinguishing between high and low intensity conflicts more broadly. Namely by identifying drops in battle related fatalities below pre-specified threshold.
 
-TODO: hidden markov models
-  - Allows us to estimate the probability that a conflict is in a particular state at a given time point (ie estimate latent states)
-  - Allows us to model the effects of covariates on the probability of transitioning between latent states & model the effects of covariates on observable outcomes
+  - Move away from arbitrary thresholds towards probabilistic
+    inference of state labels that incorporate uncertainty.
+  - At a cost of computational complexity
 
-Note: "a hidden markov model is a tool for representing probability distributions over sequences of observations"
+HMMs provide a probabilistic approach to capture the temporal shifts in conflict intensity and to estimate the underlying processes driving these transitions.
 
-Potential issues: computational costs, and multimodality in the posterior distribution, driven by the high variance in observed fatalities and the difficulty in identifying latent states.
-    - One possible mitigation, informative priors. It pays to be bayesian. (Maybe compare bayesian approach to only EM algorithm).
+Better our understanding of both frozen conflicts, and conflict dynamics more generally
 
-Previous approaches to measuring frozen conflicts have relied on identifying conflicts falling below a certain threshold in the number of battle related deaths and then qualitatively assessing whether the post-conflict situation satisfies some criteria for being considered frozen [@klosek_frozen_2021; @krusell_jla_frozen_2024]. The threshold may be weakly informed by theory --- for example, a higher threshold may be set if a researcher believes that only major conflicts, typically identified as wars, may become frozen. However, the actual cutoff is still fairly arbitrary and follows more from conventions set by pre-existing conflict datasets.[^ucdp] Of course, there is no magic number at which a conflict becomes a war or turns dormant. Arbitrary thresholds are a practical device to approximate a complex, hidden dynamic. The utility of that approximation is in part a function of a researcher's goals, but it can have a significant impact on the classification of conflicts as well as the coding of conflict onset and termination [@sambanis_what_2004; @florea_where_2012]. For frozen conflicts specifically, this affects not only when we consider conflicts to have become frozen, but also treats escalation and de-escalation in a homogenous manner across conflicts. For example, the magnitude of violence within conflicts can vary considerably; a modest increase in violence within a relatively low intensity frozen civil conflict in a small country may substantively represent a major escalation.
 
-[^ucdp]: For example, the Uppsala Conflict Data Program classifies organized violence between a state and non-state actor exceeding 25 battle related deaths within a year as "active civil conflict" [@gleditsch_armed_2002] while the Correlates of War Intrastate Dataset sets a threshold of 1000 within a twelve month period [@sarkees_resort_2010].
+# Existing Measures of Frozen Conflicts
 
-Thus, I take a latent variable approach to the measurement of frozen conflict using a hidden markov model. Similar models have been applied previously to the study of conflict for the purposes of forecasting [@schrodt_forecasting_2006; @shearer_forecasting_2007; @randahl_predicting_2022] as well as to model the effects of ceasefires on conflict dynamics [@williams_bayesian_2024]. In the context of frozen conflicts, I assume that the degree to which a conflict is frozen is never directly observed; however, there are observable conflict dynamics, specifically battle related deaths, which can be used to infer the latent state for a conflict at a specific time interval. Since the goal is to model not only the onset of a frozen conflict, but also the potential subsequent waves of escalation and de-escalation, the unit of analysis is the intervening years between which a conflict is first coded as active according to the UCDP dataset until a conclusive termination has been reached, either in the form of a one-sided military victory, actor death, and/or a comprehensive peace treaty that addresses the underlying conflict issue.
+# HMMs in Conflict Research
 
-Within the hidden markov model, I model the probability of a conflict transitioning between periods of being frozen and active as a function of the primary variable of interest, international arms transfers to government forces, together with a set of additional covariates. The effect of these covariates, inclusive the primary treatment, are allowed to varying depending on which latent states are being transitioned from and to. This allows for measuring the differential effect of international arms transfers depending on whether the conflict is currently in an active or frozen state.
+# A Hidden Markov Model of Conflict Dynamics
 
 ## Model Specification
 
-```{R, engine = 'tikz'}
-#| label: fig-states
-#| fig-cap: State diagram showing the hidden states and their possible
-#|          transition paths for a single conflict-year. Note,
-#|          "Terminated" is *not* explicitly modeled in the HMM being
-#|          presented in this paper. It is shown in order to emphasize
-#|          that when a civil conflict is conclusively terminated, it
-#|          drops out of the dataset. In other words, "Terminated", is
-#|          an absorbing state with no possibility of transitioning to
-#|          "Active" or "Frozen".
+## Estimation
 
-\usetikzlibrary{arrows.meta, shapes, positioning}
-
-\begin{tikzpicture}[auto, >=Stealth, font=\small, node distance=1cm]
-
-  % Define styles for the nodes
-\tikzset{state/.style={ellipse, draw, align=center}}
-
-  % Nodes for states
-\node[state] (Active) {\text{
-    Active}} ;
-  \node[state, right=of Active] (Frozen) {Frozen};
-  \node[state, below=of Active] (Termination) {Terminated};
-
-  % Arrows between states
-  \path[->]
-    (Active) edge [loop left] (Active)
-    (Frozen) edge [loop right] (Frozen)
-    (Active) edge [bend left] (Frozen)
-    (Frozen) edge [bend left] (Active)
-    (Active) edge [bend right] (Termination)
-    (Frozen) edge [bend left] (Termination);
-
-\end{tikzpicture}
-```
-
-Formally, for some conflict $i \in \{1, 2, \ldots, N\}$, let $S_{1:T_i}$ be a hidden sequence from a discrete stochastic process satisfying the first-order markov property $p\left(S_{t+1} = s | S_{t}, S_{t-1}, \ldots, S_{1}\right) = p\left(S_{t+1} = s | S_t \right)$ with $S_t \in \{1, \ldots, K\}$. For the purposes of this analysis, $S_t$ can take on one of two transient states (*i.e.*, $K = 2$) representing either an "Active" conflict or a "Frozen" conflict as depicted in @fig-states. There is also an implicit absorbing state, "Terminated", that is not directly modeled, but following which a conflict drops out of the dataset. The initial transition probabilities for $S_1$ are given by the K-vector $\pi$. For $t > 1$,
-the probability of transitioning from state $j$ to state $k$ from time $t-1$ to $t$ for conflict $i$, denoted $\alpha_{i,jk}(t)$, is a time varying function of a set of covariates, X, transformed using the softmax function to ensure that $\sum_{k=1}^K \alpha_{i,jk}(t) = 1$. Specifically,
-
-\begin{align*}
-\alpha_{i,jk}(t) = \cfrac{\nu_{i,jk} + X_{it}' \beta_{jk}}{\sum_{z=1}^K \nu_{i,jz} + X_{it}' \beta_{jz}}
-\end{align*}
-
-where $\nu_{i,jk}$ is the baseline intercept that varies by conflict and $\beta_{jk}$ is the vector of state transition specific effects for $X_{it}$.
-
-```{R, engine = 'tikz'}
-#| label: fig-network
-#| fig-cap: State transition diagram showing the evolution of the
-#|          system for each time period $t = 1, 2, \ldots, T$ where
-#|          $S_t$ is the hidden state, $y_t$ the observed number of
-#|          battle related deaths, and $X_t$ the vector of covariates
-#|          affecting the transition probabilities between each time
-#|          period.
-
-\usetikzlibrary{arrows.meta, shapes, positioning}
-
-\begin{tikzpicture}[node distance=2cm, auto, >=Stealth]
-  \tikzset{
-    state/.style={circle, draw, minimum size=0.5cm},
-  }
-
-  \node[state] (S1) {$S_1$};
-  \node[state, right of=S1] (S2) {$S_2$};
-  \node[right of=S2] (Sdots) {\scalebox{2}{$\ldots$}};
-  \node[state, right of=Sdots] (ST) {$S_T$};
-
-
-  % Nodes for emissions
-  \node[below of=S1] (Y1) {$y_1$};
-  \node[below of=S2] (Y2) {$y_2$};
-  \node[below of=ST] (YT) {$y_T$};
-
-  % Nodes for covariates
-  \node[above of=S1] (X1) {$X_1$};
-  \node[above of=S2] (X2) {$X_2$};
-  \node[above of=ST] (XT) {$X_T$};
-
-  % Arrows between latent states
-  \path[->]
-    (S1) edge (S2)
-    (S2) edge (Sdots)
-    (Sdots) edge (ST);
-
-  % Arrows from latent states to emissions
-  \path[->]
-    (S1) edge (Y1)
-    (S2) edge (Y2)
-    (ST) edge (YT);
-
-  % Arrows from covariates to latent states
-  \path[->]
-    (X1) edge (S1)
-    (X2) edge (S2)
-    (XT) edge (ST);
-
-\end{tikzpicture}
-```
-
-The observed emissions, $y_{1:T_i}$, are the yearly number of battle related deaths and depend on the hidden states $S_{1:T_i}$. The full bayesian network is visualized in @fig-network showing the evolution of the system from $t = 1, 2, \ldots, T_i$.
-
-The joint probability function for both sequence can be found recursively and marginalized over the support of $\boldsymbol{S}$ to form the conditional probability function for $y_{1:T_i}$.
-
-\begin{equation}
-p(y_{1:T_i} | S_{1:T_i}) = \sum_{\boldsymbol{S}} p\left( y_{1:T_i}, S_{1:T_i} \right) = \sum_{S_1, S_2, \ldots, S_{T_i}} \left( \pi_{S_1} p(y_1 | S_1) \prod_{t=2}^{T_i} \alpha_{i, S_{t-1}S_{t}}(t) p(y_t | S_t) \right)
-\end{equation}
-
-Since $y_t \in \mathbb{N}_0$, I model the yearly battle related deaths given that $S_t$ is in state $k$ with a negative binomial distribution using a mean-dispersion parameterization,
-
-\begin{align*}
-y_{t} | S_t = k \sim \text{NegBinomial}\left(\mu_{ik}, \phi\right) \\
-\end{align*}
-
-such that $\mathbb{E}\left[y_{t} | S_t = k\right] = \mu_{ik}$ and $\text{Var}(y_{t} | S_t = k) = \mu_{ik} + \frac{\mu_{ik}^2}{\phi}$.[^negbin]
-
-[^negbin]: This parameterization arises naturally from ... poisson-gamma mixture. As $\phi \to \infty$ then $y | S_t, \theta \overset{d}{\to} \text{Pois}$.
-
-Finally, extending the notation to the full set of sequences for all conflicts, let $S^{(i)}$ and $y^{(i)}$ explicitly now be the hidden and observed sequences for conflict $i$. Then the likelihood with unknown parameters $\theta$ follows easily.
-
-\begin{equation}
-\mathcal{L}(\boldsymbol{y} | \theta) = \prod_{i=1}^N p(y^{(i)}_{1:T_i} | S^{(i)}_{1:T_i})
-\end{equation}
-
-\begin{equation}
-p(\theta | \boldsymbol{y}, X) \propto \prod_{i=1}^N p(y^{(i)}_{1:T_i} | X^{(i)}, \theta) p(\theta)
-\end{equation}
-
-To complete the full inference model I set the following priors. For the initial state probability simplex I select a flat dirichlet prior, $\pi \sim \text{Dirichlet}\left(\frac{1}{K}, \ldots, \frac{1}{K}\right)$.[^dirichlet] For the baseline intercepts in the time-varying transition function, $\alpha_{i,jk}$, I place a hierarchical prior.
-
-\begin{align*}
-\nu_{i,jk} & \sim \text{Normal}(\mu_{jk}, \sigma_{jk}) \\
-\mu_{jk} & \sim \text{Normal}(0, 1) \\
-\sigma_{jk} & \sim \text{Cauchy}_+(0, 0.5)
-\end{align*}
-
-[^dirichlet]: TODO: This is an uninformative prior that encodes an equal prior probability for the initial observation to be either a frozen or active. Practically, this will have a relatively small impact on the actual model estimates since the likelihood should dominate the prior; however, conceptually it may be more consistent to give more probability weight to the active state since frozen conflicts by definition should start as active conflicts. The complication is that there is left-censoring in the dataset --- our conflict sequences reflect the start date of the BRD dataset and may not capture the actual first conflict-year coded by UCDP.
-
-Thus, the varying intercepts, $\nu_{\cdot,jk}$, are partially pooled across conflicts. Meanwhile, for each regression coefficient, $\beta_d \in \mathbb{R}^{K \times K}$ for $d = 1, 2, \ldots, D$ covariates, I place an uninformative multivariate normal prior with an LKJ prior [@lewandowski_generating_2009] on the correlation matrix, $\Omega$, and a standard Half-Cauchy on the diagonal of variances, $\upsilon$.
-
-\begin{align*}
-\beta_{d} & \sim \text{MultiNormal}(0_K, \Sigma) \\
-\Omega & \sim \text{LKJ}(1) \\
-\upsilon & \sim \text{Cauchy}_+(0, 1)
-\end{align*}
-
-For the conditional probability function, $p(y^{(i)}_t | S^{(i)}_t)$, the mean for the negative binomial distribution is also given a hierarchical prior with informative hyperpriors on the log-scale expectations for the two latent states. Substantively, this encodes an expectation that an "Active" conflict will feature more battle related deaths than a "Frozen" conflict.[^prior]
-
-[^prior]: The hierarchical parameters for $\mu_{ij}$ are on the log scale. An informative hyperprior is placed on $\lambda$ where $\mathbb{E}(\lambda) = (0, 6.21)$ corresponding to 1 and ~500 battle related deaths respectively.
-
-\begin{align*}
-\phi & \sim \text{Gamma}(2, 0.1) \\
-\mu_{ij} & \sim \text{LogNormal}\left(\lambda_j, \tau_j \right) \\
-\lambda_1 & \sim \text{Normal}(0, 1) \\
-\lambda_2 & \sim \text{Normal}(6.21, 1) \\
-\tau & \sim \text{Cauchy}_+(0, 0.5)
-\end{align*}
-
-Finally,
+# Applied Example: Arms Transfers and Conflict Phases
 
 ## Data
 
-### Dependent Variable
+Unit of analysis: Civil conflict sequences reaching at least 500 cumulative fatalities at the conflict-year level
 
-Battle related deaths, drawn from the UCDP GED dataset and aggregated at the conflict-year level. Note, this also includes non-active years where the number of battle related deaths are below the UCDP threshold.
+Emission variable: battle-related fatalities
 
-### Independent Variables
+Independent variables:
 
-Primarily independent variable is international arms transfers measured using the SIPRI trend-indicator value (TIV), which captures "...the volume of international transfers of major conventional weapons using a common unit."
+- TIV (asinh)
+- Ceasefire
+- Peacekeeping operation
+- Ongoing conflict
+- Polyarchy (squared polynomial)
+- Population (logged)
+- GDPpc (logged)
+- Duration (cubed polynomial)
 
-I also control for GDP per capita and Democracy with data drawn from V-Dem, declared ceasefires from the Ceasefire Project, and the duration of time since the conflict enters the dataset.
+## Priors/Identification
 
-TODO: There are a host of additional time-varying predictors that I can include. For example, peacekeeping, additional ongoing conflicts, state capacity(?)
+## Results
 
-# Results
-
-## Predicted vs actual deaths
-
-Because of non-linear model, empirical estimands
-
-average posterior predicted probability for transitioning from state $j$ to state $k$ for some constant TIV value across all transition cases.
-
-Formally,
-
-\[ g_{j \to k}(\theta, \boldsymbol{X}^\star) = \frac{1}{N} \sum_{i=1}^N \frac{1}{T_i - 1} \sum_{t=2}^{T_i} P(S_t^{(i)} = k | S_{t-1}^{(i)} = j, X_t^{\star(i)}, \theta) \]
-
-where $\boldsymbol{X}^{\star(i)} = [c, X_2^{(i)}, \ldots, X_D^{(i)} ]$ for $c \in [0, \max_{i \in \{1, \ldots, N \}} X_1^{(i)}]$
-
-For a fixed $\boldsymbol{X}^\star$, the push-forward distribution is approximated via monte carlo integration with draws from the posterior.
-
-\[ p(g_{j \to k}(\theta, \boldsymbol{X}^\star) | \boldsymbol{y}, \boldsymbol{X}) \approx \{ g_{j \to k}(\theta^{(m)}, \boldsymbol{X}^\star) : \theta^{(m)} \sim p(\theta | \boldsymbol{y}, \boldsymbol{X}) \} \]
-
-Plots:
-1. Predicted vs. actual deaths
-2. Predicted probability of not being frozen
-3. Parameter plot for beta tiv
-4. APP - Marginal Effects
-    - Prob. of a frozen conflict escalating
-    - Prob. of an actie conflict de-escalating
-5. (Maybe?) long-run effect of tiv (low vs medium vs high w/ covariates at means)
-
-After fitting the model using Hamiltonian Monte Carlo, @fig-active-prob shows the median posterior predicted probabilities for a conflict-year to be classified as an "Active" conflict for four select civil conflicts: Transnistria in Moldova (PMR), the Republic of Artsakh in Azerbaijan, the LTTE in Sri Lanka, and the Chechen conflict in Russia. Also plotted are the log normalized battle related deaths per year, transformed by a standard min-max normalization in order to constrain values to be between $[0, 1]$. This allows the posterior predicted probabilities to be compared to the actual conflict dynamics for each conflict. In general, the hidden markov model is able to capture the dynamics between escalation and de-escalation fairly well, with the exception of the Chechen conflict. This is may be due to a combination of the Chechen conflict being characterized by a relatively high degree of battle related fatalities with only a brief pause in the 1990s between the First and Second Chechen Wars and the transition probabilities down-weighting the possibility for the hidden stochastic component to transition between different states, *i.e.* placing a higher probability that an active conflict continues as an active conflict rather than that $S^{(i)}_{t-1} \neq S^{(i)}_t$, but further investigation will be necessary.
-
-```{R}
-#| label: fig-active-prob
-#| fig-height: 5
-#| fig-cap: In green the median posterior probability that a
-#|          conflict-year is classified as an "Active Conflict"
-#|          according to the Hidden Markov Model. The points in black
-#|          are the log normalized yearly battle related deaths using
-#|          a standard min-max transformation to be constrained on a
-#|          [0, 1] interval.
-
-library(cmdstanr)
-library(dplyr)
-library(ggplot2)
-library(tidyr)
-
-dataset <- readRDS("./data/merge_data.rds")
-
-files <- list.files("posteriors", "^output_\\d.csv$", full.names = T)
-stopifnot(length(files) > 0)
-
-# This is using data.table::fread which needs R.utils installed to
-# read compressed files.
-fit <- as_cmdstan_fit(files)
-
-Zprob <- fit$draws("Gamma", format = "matrix") |> apply(2, median)
-K <- fit$metadata()$stan_variable_sizes$beta[1]
-for (i in 1:K) {
-    state_regex <- \(i) sprintf("^Gamma\\[\\d+,%d\\]$", i)
-    dataset[paste0("Zprob", i)] <- exp(Zprob[grepl(state_regex(i), names(Zprob))])
-}
-
-dataset$yhat <- fit$draws("yhat", format = "matrix") |> apply(2, median)
-
-df <- select(dataset, unit_id, year, brd, yhat, matches("Zprob")) |>
-    pivot_longer(cols = starts_with("Zprob"), names_to = "Z", values_to = "prob") |>
-    mutate(Z = sub("^Zprob", "", Z) |> factor(levels = 3:1)) |>
-    group_by(unit_id, year) |>
-    mutate(prob = prob / sum(prob))
-
-sub.df <- filter(df, unit_id == 63)
-
-ggplot(sub.df, aes(year, brd, col = "Observed")) +
-    geom_point() +
-    geom_point(aes(year, yhat, col = "Predicted")) +
-    geom_bar(aes(year, prob, fill = Z), stat = "identity", position = "stack", alpha = 0.6)
-
-max_observed <- max(sub.df$brd)
-scaling_factor <- 1 / max_observed
-
-# Plot the stacked bar plot with the secondary y-axis
-ggplot() +
-  # Stacked bar plot (background)
-  geom_tile(data = sub.df, aes(x = year, y = prob, fill = Z),
-           stat = "identity", position = "stack", alpha = 0.2, width = 1) +
-  # Observed count as points (overlay, scaled down to match y-axis)
-    geom_point(data = sub.df, aes(x = year, y = brd * scaling_factor, col = "Observed")) +
-    geom_point(data = sub.df, aes(year, yhat * scaling_factor, col = "Predicted")) +
-  # Primary y-axis (for the probability simplex)
-  scale_y_continuous(name = "Probability Simplex", sec.axis = sec_axis(~ . / scaling_factor, name = "Observed Count")
-                     )  +
-    theme_tufte()
-
-conflicts <- c(394, 388, 352, 401)
-par(mfrow = c(2, 2))
-for (conflict in conflicts) {
-    rebel <- dataset$side_b[dataset$conflict_id == conflict] |> first()
-    b <- dataset$conflict_id == conflict
-    years <- dataset$year[b]
-
-    phat <- colMeans(active_state[, b])
-
-    plot(dataset$year[b], log_normalize(dataset$brd[b]), main = rebel,
-         xlab = "Year", ylab = "Log Normalized BRD", )
-
-    axis(side = 4, at = seq(0, 1, by = 0.2))
-    points(dataset$year[b], phat, col = "forestgreen")
-}
-
-```
-
-Meanwhile, @fig-beta plots the posterior densities for the main independent variable of interest, the SIPRI trend-indicator value (TIV) that measures the volume of international arms transformed into a common unit, and its effect on the probability of transitioning to latent state $i$ given that the previous year was in state $j$. From these results it is clear that the TIV variable is extremely uninformative in regards to the time-varying transition probability matrix. This opens for two possibilities: either international arms transfers given to government forces play a relatively little role in determining how conflicts transition in and out of being frozen, or the impact is more complex than is being captured by the model. For example, the effect of arms transfers may instead be cumulative with a time-varying autocorrelational dependence. Thus, the next step will be to add in event-history style parameters such as lags of the TIV variable.
-
-```{R}
-#| label: fig-beta
-#| fig-cap: Posterior densities for the TIV transition coefficient
-#|          varying by transitioning states.
-
-library(latex2exp)
-
-tiv <- fit$draws(c(sprintf("beta[1,%d,1]", 1:2), sprintf("beta[2,%d,1]", 1:2)),
-                 format = "matrix")
-
-par(mfrow = c(2, 2), oma = c(1, 1, 2, 1), mar = c(4, 6, 2, 1))
-plot(density(tiv[, 1]), ylab = "", xlab = TeX("$\\beta_{tiv}$"), main = "", yaxt = "n")
-abline(v = 0, lty = 2)
-mtext(TeX("$S_{t-1} = Frozen"), side = 2, line = 1, cex = 1, las = 2)
-mtext(TeX("$S_{t}$ = Frozen"), cex = 1)
-
-plot(density(tiv[, 2]), ylab = "", xlab = TeX("$\\beta_{tiv}$"),
-     main = "", yaxt = "n")
-abline(v = 0, lty = 2)
-mtext(TeX("$S_t$ = Active"),  cex = 1)
-
-plot(density(tiv[, 3]), ylab = "", xlab = TeX("$\\beta_{tiv}$"),
-     main = "", yaxt = "n")
-abline(v = 0, lty = 2)
-mtext(TeX("$S_{t-1}$ = Active"), side = 2, line = 1, las = 2, cex = 1)
-
-plot(density(tiv[, 4]), ylab = "", xlab = TeX("$\\beta_{tiv}$"), main = "", yaxt = "n")
-abline(v = 0, lty = 2)
-
-```
+- Estimated state transitions w/ predicted emissions
+- Beta parameter estimates for TIV
+- Marginal effects:
+  1. Probability of a frozen conflict **escalating**
+  2. Probability of an active conflict **de-escalating**
 
 # Conclusion
 
@@ -406,7 +109,6 @@ Shortcomings:
 Future work:
 - incorporate more battlefield dynamics, including distance to pop. centers, proportion of calendar year with violent events etc etc.
 - dyadic level rather than conflict level
-
 
 # Acknowledgement
 
