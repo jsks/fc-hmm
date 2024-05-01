@@ -37,11 +37,18 @@ data {
   // Prior parameters - emission log-means
   array[K] real mu_location;
   array[K] real mu_scale;
+
+  // Prior for initial state probabilities
+  vector[K] pi_alpha;
+
+  // SD prior for partially pooled intercepts
+  real<lower=0> sigma_scale;
+  real<lower=0> tau_scale;
 }
 
 transformed data {
     // Initial state probabilities
-    simplex[K] pi_sim = dirichlet_rng(rep_vector(1, K));
+    simplex[K] pi_sim = dirichlet_rng(pi_alpha);
 
     // Dispersion parameter for negative binomial
     real<lower=0> phi_sim = gamma_rng(2, 0.1);
@@ -69,7 +76,7 @@ transformed data {
     for (i in 1:K) {
         for (j in 1:K) {
             nu_sim[i, j] = student_t_rng(3, 0, 1);
-            sigma_sim[i, j] = abs(normal_rng(0, 0.1));
+            sigma_sim[i, j] = abs(normal_rng(0, sigma_scale));
         }
     }
 
@@ -87,7 +94,7 @@ transformed data {
     vector<lower=0>[K] tau_sim;
     for (i in 1:K) {
         mu_sim[i] = normal_rng(mu_location[i], mu_scale[i]);
-        tau_sim[i] = abs(normal_rng(0, 0.1));
+        tau_sim[i] = abs(normal_rng(0, tau_scale));
     }
     mu_sim = sort_asc(mu_sim);
 

@@ -20,6 +20,13 @@ data {
   // Prior parameters - emission log-means
   array[K] real mu_location;
   array[K] real mu_scale;
+
+  // Prior for initial state probabilities
+  vector[K] pi_alpha;
+
+  // SD prior for partially pooled intercepts
+  real<lower=0> sigma_scale;
+  real<lower=0> tau_scale;
 }
 
 #include base.stan

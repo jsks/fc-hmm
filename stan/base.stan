@@ -64,7 +64,7 @@ transformed parameters {
 
 model {
     // Priors
-    target += dirichlet_lpdf(pi | rep_vector(1, K));
+    target += dirichlet_lpdf(pi | pi_alpha);
     target += gamma_lpdf(phi | 2, 0.1);
     for (i in 1:K)
         target += std_normal_lpdf(to_vector(beta[i]));
@@ -73,7 +73,7 @@ model {
 
     // Partially pooled transition intercepts
     target += student_t_lpdf(to_vector(nu) | 3, 0, 1);
-    target += normal_lpdf(to_vector(sigma) | 0, 0.1);
+    target += normal_lpdf(to_vector(sigma) | 0, sigma_scale);
     for (conflict in 1:n_conflicts)
         target += std_normal_lpdf(to_vector(zeta_raw[conflict]));
 
@@ -81,7 +81,7 @@ model {
     for (i in 1:K)
         target += normal_lpdf(mu[i] | mu_location[i], mu_scale[i]);
 
-    target += normal_lpdf(tau | 0, 0.1);
+    target += normal_lpdf(tau | 0, tau_scale);
     for (conflict in 1:n_conflicts)
         target += std_normal_lpdf(eta_raw[conflict]);
 

@@ -45,8 +45,13 @@ data <- list(N = nrow(df),
              conflict_ends = conflicts$end,
              X = data.matrix(X),
              y = df$brd,
-             mu_location = c(0, 3.91, 6.91),
-             mu_scale = c(0.1, 0.1, 0.1))
+
+             # Priors
+             mu_location = c(0, 4.905, 6.908),
+             mu_scale = c(1, 0.5, 0.25),
+             pi_alpha = c(5, 10, 10),
+             sigma_scale = 0.1,
+             tau_scale = 0.1)
 str(data)
 
 stopifnot(!anyNA(data))
