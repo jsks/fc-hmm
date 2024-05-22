@@ -28,7 +28,7 @@ v <- (asinh(newdata) - mean(observed)) / sd(observed)
 
 for (i in 1:3) {
     info("Calculating posterior probabilities from state %d", i)
-    probs <- posterior_transitions(fit, X_tilde, unit_id, v, 1, 500)
+    probs <- posterior_transitions(fit, X_tilde, unit_id, v, i, 500)
 
     for (j in 1:3) {
         info("Saving %d -> %d", i, j)
