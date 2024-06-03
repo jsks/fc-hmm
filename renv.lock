@@ -303,6 +303,16 @@
       ],
       "Hash": "76e94de462aa18ea966a38956ecf4497"
     },
+    "docopt": {
+      "Package": "docopt",
+      "Version": "0.7.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "methods"
+      ],
+      "Hash": "e9eeef7931ee99ca0093f3f20b88e09b"
+    },
     "dplyr": {
       "Package": "dplyr",
       "Version": "1.1.4",
@@ -358,7 +368,7 @@
     "fc.hmm": {
       "Package": "fc.hmm",
       "Version": "0.1.0",
-      "Source": "unknown",
+      "Source": "lib/fc.hmm",
       "Requirements": [
         "cpp11",
         "dplyr",

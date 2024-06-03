@@ -5,16 +5,26 @@
 #SBATCH -n 4
 #SBATCH --mail-type=ALL
 
+set -o pipefail
+
 printf "Starting HMM job at $(date)\n"
 printf "Model priors:\n"
 
 # This is a hack, but that's the tradeoff from using a minimal base
 # image without coreutils... Strange that `apptainer` doesn't have
 # a better method for extracting files.
-apptainer sif dump 4 hmm.sif > files.squashfs
+apptainer sif dump 4 image.sif > files.squashfs
 unsquashfs -q -d data files.squashfs -e hmm.json
 jq -c '{mu_location},{mu_scale},{sigma_scale},{tau_scale},{pi_alpha}' data/hmm.json
 
-apptainer run --bind $PWD:/data hmm.sif num_chains=4 num_threads=4 \
+apptainer run --bind $PWD:/data image.sif sample \
+          num_warmup=1000 \
+          num_samples=1000 \
+          thin=1 \
+          adapt delta=0.95 \
+          num_chains=4 \
+          num_threads=4 \
           output sig_figs=4 file=/data/output.csv
-apptainer exec --bind $PWD:/data hmm.sif /diagnose /data/output_{1..4}.csv
+apptainer exec --bind $PWD:/data image.sif /diagnose /data/output_{1..4}.csv |
+    tee /dev/tty |
+    grep -q 'no problems detected'

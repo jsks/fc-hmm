@@ -17,13 +17,13 @@ mkdir -p posteriors
 
 function run() {
     output=$(mktemp -p posteriors -d)
-    apptainer run --bind $PWD/$output:/data sbc.sif output file=/data/output.csv refresh=0
+    apptainer run --bind $PWD/$output:/data image.sif output file=/data/output.csv refresh=0
 }
 export -f run
 
 function diagnose() {
     echo "Running diagnostics for $1"
-    apptainer exec --bind $(pwd -P)/$1:/data sbc.sif '/diagnose' '/data/output.csv' | \
+    apptainer exec --bind $(pwd -P)/$1:/data image.sif '/diagnose' '/data/output.csv' | \
         grep -q 'no problems detected'
 }
 export -f diagnose
@@ -41,4 +41,4 @@ export -f clean
 seq 1 $ITER | xargs -i -P $NPROC bash -c 'run'
 find posteriors -name 'tmp.*' -type d | xargs -i -P $NPROC bash -c 'clean {}'
 
-Rscript pp.R --cores $NPROC posteriors
+Rscript ranks.R --cores $NPROC posteriors

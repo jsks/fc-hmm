@@ -1,3 +1,5 @@
+# -*- mode: dockerfile-ts -*-
+#
 # Multi-stage build to avoid accumulating build dependencies in the
 # final image. Output is two separate images for each HPC job.
 #
@@ -9,7 +11,8 @@
 # Compile Stan models
 FROM debian:12 AS cmdstan
 
-ARG CMDSTAN_VERSION=2.35.0
+ARG CMDSTAN_VERSION="2.35.0"
+ARG MODEL="simple"
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -25,7 +28,7 @@ RUN curl -LO https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VE
 WORKDIR /cmdstan
 
 COPY etc/stan/local /cmdstan/make/local
-COPY stan/*.stan .
+COPY stan/${MODEL}/*.stan .
 
 RUN STANCFLAGS="--include-paths /cmdstan" make -j$(nproc) bin/diagnose hmm sbc && \
     patchelf --set-rpath / hmm sbc && \
@@ -34,9 +37,11 @@ RUN STANCFLAGS="--include-paths /cmdstan" make -j$(nproc) bin/diagnose hmm sbc &
 # Simulation based calibration image
 FROM gcr.io/distroless/cc-debian12 AS sbc
 
+ARG MODEL="simple"
+
 # This is unnecessary for the image, but it's nice to know exactly
 # which model code was run.
-COPY stan/*.stan .
+COPY stan/${MODEL}/*.stan .
 
 COPY --from=cmdstan /cmdstan/bin/diagnose .
 COPY --from=cmdstan /cmdstan/sbc .
@@ -48,13 +53,14 @@ ENTRYPOINT ["/sbc", "data", "file=/sbc.json", "sample"]
 # Hidden markov model image
 FROM gcr.io/distroless/cc-debian12 AS hmm
 
-COPY stan/*.stan .
+ARG MODEL="simple"
+ARG DATA="data/hmm-simple-k3.json"
+
+COPY stan/${MODEL}/*.stan .
 
 COPY --from=cmdstan /cmdstan/bin/diagnose .
 COPY --from=cmdstan /cmdstan/hmm .
 COPY --from=cmdstan /cmdstan/stan/lib/stan_math/lib/tbb/libtbb.so.2 libtbb.so.2
-COPY data/json/hmm.json .
+COPY ${DATA} .
 
-ENTRYPOINT ["/hmm", "data", "file=/hmm.json", "sample", "num_warmup=5000", \
-            "num_samples=2000", "thin=2", "adapt", "delta=0.95", \
-            "algorithm=hmc", "engine=nuts"]
+ENTRYPOINT ["/hmm", "data", "file=/hmm.json"]

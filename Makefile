@@ -1,8 +1,6 @@
 SHELL = /bin/bash -eo pipefail
 
 manuscript := paper.qmd
-raw        := data/raw
-json       := data/json
 
 post        := posteriors
 fits        := $(patsubst %,$(post)/output_%.csv,$(shell seq 1 4))
@@ -15,16 +13,12 @@ white  := \033[0;37m
 reset  := \033[0m
 
 all: $(manuscript:.qmd=.pdf)
-.PHONY: build clean help preview wc
-
-build: $(json)/hmm.json $(json)/sbc.json ## Build the Stan model container image
-	podman build -t jsks/hmm --target=hmm . && \
-		podman build -t jsks/sbc --target=sbc .
+.PHONY: clean help preview todo wc
 
 clean: ## Remove all generated files
 	rm -rf $(foreach ext, pdf docx html, $(manuscript:%.qmd=%.$(ext))) \
 		$(manuscript:%.qmd=%_files) $(manuscript:%.qmd=%.cache) \
-		data/merge_data.rds $(json)
+		data/merge_data.rds data/*.json
 
 help:
 	@printf 'To compile $(manuscript) as a pdf:\n\n'
@@ -39,29 +33,13 @@ help:
 preview: ## Auto-rebuild html manuscript
 	quarto preview $(manuscript) --to html
 
+todo: ## List TODO comments in project files tracked by git
+	@grep --color=always --exclude=Makefile --exclude=library.bib \
+		-rni todo $$(git ls-files) *.org || :
+
 wc: ## Rough estimate of word count for manuscript
 	@printf '$(manuscript): '
 	@scripts/wordcount.sh $(manuscript)
-
-###
-# Data prep
-data/sequences.rds: $(raw)/ucdp-peace-agreements-221.xlsx \
-			$(raw)/ucdp-term-acd-3-2021.xlsx \
-			$(raw)/GEDEvent_v23_1.rds \
-			$(raw)/UcdpPrioConflict_v23_1.rds \
-			R/sequences.R
-	Rscript R/sequences.R
-
-data/merge_data.rds: data/sequences.rds \
-			$(raw)/V-Dem-CY-Full+Others-v14.rds \
-			$(raw)/Third-Party-PKMs-version-3.5.xls \
-			$(raw)/CFD_oct_2022_id-1.xlsx \
-			$(raw)/import-export-values_1950-2023.csv \
-			R/merge.R
-	Rscript R/merge.R
-
-$(json)/%.json: R/%.R data/merge_data.rds
-	Rscript $<
 
 ###
 # Post-processing
@@ -72,8 +50,7 @@ $(transitions) &: $(fits)
 # Manuscript targets
 $(foreach ext, pdf docx html, $(manuscript:%.qmd=%.$(ext))): \
 	data/merge_data.rds \
-	$(fits) \
-	$(transitions)
+	$(fits)
 
 %.docx: %.qmd
 	quarto render $< --to docx
@@ -82,4 +59,4 @@ $(foreach ext, pdf docx html, $(manuscript:%.qmd=%.$(ext))): \
 	quarto render $< --to html
 
 %.pdf: %.qmd
-	quarto render $< --to pdf
+	quarto render $< --to typst

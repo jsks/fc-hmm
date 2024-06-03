@@ -1,6 +1,11 @@
 #!/usr/bin/env Rscript
 
+library(docopt)
+library(fc.hmm)
 library(jsonlite)
+
+doc <- "Usage: sbc.R <output>"
+arguments <- docopt(doc)
 
 N <- 100
 K <- 2
@@ -32,5 +37,5 @@ stan_data <- list(N = N,
                   mu_scale = mu_scale)
 str(stan_data)
 
-dir.create("data/json", showWarnings = F)
-write_json(stan_data, "data/json/sbc.json", auto_unbox = T)
+info("Writing SBC data to %s", arguments$output)
+write_json(stan_data, arguments$output, auto_unbox = T)

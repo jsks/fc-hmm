@@ -1,0 +1,13 @@
+LDFLAGS = -Wl,-O1,--sort-common,-z,relro,-z,now
+CFLAGS += -march=x86-64-v2 -mtune=intel -pipe
+C17FLAGS += -march=x86-64-v2 -mtune=intel -pipe
+C23FLAGS += -march=x86-64-v2 -mtune=intel -pipe
+C90FLAGS += -march=x86-64-v2 -mtune=intel -pipe
+C99FLAGS += -march=x86-64-v2 -mtune=intel -pipe
+
+CXXFLAGS += -march=x86-64-v2 -mtune=intel -pipe
+CXX11FLAGS += -march=x86-64-v2 -mtune=intel -pipe
+CXX14FLAGS += -march=x86-64-v2 -mtune=intel -pipe
+CXX17FLAGS += -march=x86-64-v2 -mtune=intel -pipe
+CXX20FLAGS += -march=x86-64-v2 -mtune=intel -pipe
+CXX23FLAGS += -march=x86-64-v2 -mtune=intel -pipe

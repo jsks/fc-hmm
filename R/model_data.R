@@ -1,31 +1,45 @@
 #!/usr/bin/env Rscript
 #
-# Input data for HMM model
+# Input data for HMM model. This script parametrically sets the number
+# of latent states as well as which TIV variable to use.
 ###
 
+library(docopt)
 library(dplyr)
 library(fc.hmm)
 library(jsonlite)
 library(tools)
+
+doc <- "
+Usage: model_data.R [options] <output>
+
+-x, --variable=<variable>  Variable of interest [default: tiv_1].
+-k, --states=<states>      Number of latent states states [default: 3]."
+
+arguments <- docopt(doc)
+stopifnot(arguments$states %in% c(2, 3))
 
 ###
 # Load merged data
 df <- readRDS("data/merge_data.rds") |>
     arrange(unit_id, year)
 
+stopifnot(arguments$variable %in% colnames(df))
+
 # Time-varying covariates affecting transition probabilities.
-X <- select(df, tiv_1, ceasefire, pko, ongoing, v2x_polyarchy,
-                     e_pop, e_gdppc, duration) |>
+X <- select(df, arguments$variable, ceasefire, pko, ongoing,
+            v2x_polyarchy, e_pop, e_gdppc, duration) |>
     polynomial("v2x_polyarchy", 2) |>
     polynomial("duration", 3) |>
-    mutate(tiv_1 = asinh(tiv_1),
-           e_pop = log(e_pop),
+    mutate(e_pop = log(e_pop),
            e_gdppc = log(e_gdppc)) |>
-    mutate(across(c(tiv_1, e_pop, e_gdppc), normalize))
+    mutate(across(c(e_pop, e_gdppc), normalize))
+
+X[[arguments$variable]] <- asinh(X[[arguments$variable]]) |> normalize()
 
 # We assume throughout the project that our primary variable of
 # interest is always the first column in the covariate matrix.
-stopifnot(colnames(X)[1] == "tiv_1")
+stopifnot(colnames(X)[1] == arguments$variable)
 stopifnot(!anyNA(X))
 
 # Starts, ends for each conflict sequence
@@ -34,10 +48,19 @@ conflicts <- mutate(df, row = row_number()) |>
     summarise(start = first(row),
               end = last(row))
 
+# BRD mean log-scale priors
+if (arguments$state == 3) {
+    mu_location <- c(log(1), log(50), log(1000))
+    mu_scale <- c(1, 0.7, 0.7)
+} else {
+    mu_location <- c(log(1), log(500))
+    mu_scale <- c(1, 0.7)
+}
+
 ###
 # Stan input data
 data <- list(N = nrow(df),
-             K = 3,
+             K = as.numeric(arguments$states),
              D = ncol(X),
              n_conflicts = n_distinct(df$unit_id),
              conflict_id = to_idx(df$unit_id),
@@ -47,9 +70,8 @@ data <- list(N = nrow(df),
              y = df$brd,
 
              # Priors
-             mu_location = c(0, 4.905, 6.908),
-             mu_scale = c(1, 0.5, 0.25),
-             pi_alpha = c(5, 10, 10),
+             mu_location = mu_location,
+             mu_scale = mu_scale,
              sigma_scale = 0.1,
              tau_scale = 0.1)
 str(data)
@@ -62,5 +84,4 @@ info("Variables: %s", paste0(colnames(X), collapse = ", "))
 info("N = %d, K = %d", data$N, data$K)
 info("BRD prior (location = %.2f, scale = %.2f)", exp(data$mu_location), data$mu_scale)
 
-dir.create("data/json", showWarnings = F)
-write_json(data, "data/json/hmm.json", auto_unbox = T)
+write_json(data, arguments$output, auto_unbox = T)

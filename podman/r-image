@@ -1,0 +1,89 @@
+# -*- mode: dockerfile-ts -*-
+
+FROM debian:trixie-slim AS renv
+
+ARG R_VERSION="4.4.1-3"
+
+RUN rm -rf /etc/apt/apt.conf.d/docker-clean
+RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        gfortran \
+        r-base-core=${R_VERSION} \
+        libeigen3-dev \
+        libopenblas0-pthread \
+        libopenblas-pthread-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install R packages with renv
+ENV _R_SHLIB_STRIP_=TRUE \
+    RENV_CONFIG_INSTALL_VERBOSE=TRUE \
+    RENV_PATHS_LIBRARY=/pkg/renv/library
+
+WORKDIR /pkg
+
+COPY .Rprofile renv.lock /pkg
+COPY renv/activate.R renv/settings.json /pkg/renv
+COPY etc/R/Makevars /root/.R/Makevars
+COPY lib/fc.hmm /pkg/lib/fc.hmm
+
+RUN --mount=type=cache,target=/root/.cache/R/renv \
+    MAKEFLAGS="-j$(nproc)" R -e "renv::restore()" -e "renv::isolate()" && \
+    mv /pkg/renv/library/*/R-*/x86_64-pc-linux-gnu /pkg/Rlibs
+
+FROM debian:trixie-slim AS pipeline
+
+ARG R_VERSION="4.4.1-3"
+
+RUN rm -rf /etc/apt/apt.conf.d/docker-clean
+RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        r-base-core=${R_VERSION} \
+        libopenblas0-pthread \
+        locales \
+        zsh \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen \
+        && locale-gen en_US.utf8 \
+        && /usr/sbin/update-locale LANG=en_US.UTF-8
+
+ENV LC_ALL en_US.UTF-8
+ENV LANG en_US.UTF-8
+
+ENV R_LIBS=/pkg
+COPY --from=renv /pkg/Rlibs /pkg
+
+WORKDIR /proj
+COPY R/ /proj/R/
+COPY scripts/pipeline.sh .
+
+FROM pipeline AS manuscript
+
+ARG QUARTO_VERSION="1.6.32"
+ARG R_VERSION="4.4.1-3"
+ARG TYPST_VERSION="0.12.0"
+
+RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        make \
+        xz-utils \
+     && rm -rf /var/lib/apt/lists/*
+
+# Install Typst
+RUN curl -LO https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz && \
+    tar xf typst-x86_64-unknown-linux-musl.tar.xz && \
+    mv typst-x86_64-unknown-linux-musl/typst /usr/bin/typst && \
+    rm -rf typst-x86_64-unknown-linux-musl.tar.xz typst-x86_64-unknown-linux-musl
+
+# Install Quarto
+RUN curl -LO https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.deb && \
+    dpkg -i quarto-${QUARTO_VERSION}-linux-amd64.deb && \
+    ln -s /opt/quarto/bin/tools/x86_64/pandoc /usr/local/bin/pandoc && \
+    rm quarto-${QUARTO_VERSION}-linux-amd64.deb
+
+CMD ["make"]

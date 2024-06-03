@@ -1,0 +1,6 @@
+.git/
+*.Rcheck/
+*.tar.gz
+*.o
+*.Rd
+*.pdf
