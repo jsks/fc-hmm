@@ -4,6 +4,9 @@ data/
 json/
 plots/
 posteriors/
+renv/*
+!renv/activate.R
+!renv/settings.json
 *.Rcheck/
 stan/*
 !stan/*.stan
