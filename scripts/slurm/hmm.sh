@@ -15,7 +15,7 @@ printf "Model priors:\n"
 # a better method for extracting files.
 apptainer sif dump 4 image.sif > files.squashfs
 unsquashfs -q -d data files.squashfs -e hmm.json
-jq -c '{mu_location},{mu_scale},{sigma_scale},{tau_scale},{pi_alpha}' data/hmm.json
+jq -c '{mu_location},{mu_scale},{sigma_scale},{tau_scale}' data/hmm.json
 
 apptainer run --bind $PWD:/data image.sif sample \
           num_warmup=1000 \

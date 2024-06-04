@@ -61,6 +61,6 @@ COPY stan/${MODEL}/*.stan .
 COPY --from=cmdstan /cmdstan/bin/diagnose .
 COPY --from=cmdstan /cmdstan/hmm .
 COPY --from=cmdstan /cmdstan/stan/lib/stan_math/lib/tbb/libtbb.so.2 libtbb.so.2
-COPY ${DATA} .
+COPY ${DATA} hmm.json
 
 ENTRYPOINT ["/hmm", "data", "file=/hmm.json"]
