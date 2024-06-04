@@ -9,7 +9,7 @@ renv/*
 !renv/settings.json
 *.Rcheck/
 stan/*
-!stan/*.stan
+!stan/simple
 
 .\#*
 .Rhistory

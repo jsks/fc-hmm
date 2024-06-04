@@ -38,9 +38,6 @@ data {
   array[K] real mu_location;
   array[K] real mu_scale;
 
-  // Prior for initial state probabilities
-  vector[K] pi_alpha;
-
   // SD prior for partially pooled intercepts
   real<lower=0> sigma_scale;
   real<lower=0> tau_scale;
@@ -48,7 +45,7 @@ data {
 
 transformed data {
     // Initial state probabilities
-    simplex[K] pi_sim = dirichlet_rng(pi_alpha);
+    simplex[K] pi_sim = dirichlet_rng(rep_vector(1, K));
 
     // Dispersion parameter for negative binomial
     real<lower=0> phi_sim = gamma_rng(2, 0.1);
@@ -60,13 +57,6 @@ transformed data {
             for (d in 1:D)
                 beta_sim[i, j, d] = std_normal_rng();
         }
-    }
-
-    // Covariate coefficients for log-mean regression
-    matrix[D, K] lambda_sim;
-    for (i in 1:D) {
-        for (j in 1:K)
-            lambda_sim[i, j] = std_normal_rng();
     }
 
     // Partially pooled transition intercepts
@@ -113,14 +103,14 @@ transformed data {
                 end = conflict_ends[conflict];
 
             S[start] = categorical_rng(pi_sim);
-            y[start] = neg_binomial_2_log_rng(X[start,] * lambda_sim[, S[start]] + eta_sim[conflict,S[start]], phi_sim);
+            y[start] = neg_binomial_2_log_rng(eta_sim[conflict,S[start]], phi_sim);
 
             for (t in (start + 1):end) {
                 // K x 1 + K x D \times D x 1 -> K x 1
                 vector[K] p = softmax(zeta_sim[conflict][, S[t-1]] + beta_sim[S[t-1]] * X[t, ]');
 
                 S[t] = categorical_rng(p);
-                y[t] = neg_binomial_2_log_rng(X[t, ] * lambda_sim[, S[t]] + eta_sim[conflict,S[t]], phi_sim);
+                y[t] = neg_binomial_2_log_rng(eta_sim[conflict,S[t]], phi_sim);
             }
         }
     }
@@ -137,10 +127,6 @@ generated quantities {
         for (j in 1:D)
             beta_lt[i][, j] = rank(beta[i][, j], beta_sim[i][, j]);
     }
-
-    matrix[D, K] lambda_lt;
-    for (i in 1:K)
-        lambda_lt[, i] = rank(lambda[, i], lambda_sim[, i]);
 
     matrix[K, K] nu_lt;
     matrix[K, K] sigma_lt;

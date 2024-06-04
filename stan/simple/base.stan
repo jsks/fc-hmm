@@ -10,8 +10,6 @@ parameters {
     simplex[K] pi;              // Initial state distribution
     array[K] matrix[K, D] beta; // Covariate coefficients
 
-    matrix[D, K] lambda;        // Emission coefficients
-
     // Partially pooled transition intercepts
     array[n_conflicts] matrix[K, K] zeta_raw;
     matrix[K, K] nu;
@@ -41,7 +39,7 @@ transformed parameters {
 
             // Initialize forward probabilities
             for (i in 1:K)
-                Gamma[start, i] = log(pi[i]) + neg_binomial_2_log_lpmf(y[start] | X[start, ] * lambda[, i] + eta[conflict, i], phi);
+                Gamma[start, i] = log(pi[i]) + neg_binomial_2_log_lpmf(y[start] | eta[conflict, i], phi);
 
             for (t in (start + 1):end) {
                 // Time-varying transition matrix (To x From), each
@@ -56,7 +54,7 @@ transformed parameters {
                     // Transitioning from state i -> j
                     Gamma[t, j] = log_sum_exp(Gamma[t - 1] +
                                               Omega[, j] +
-                                              neg_binomial_2_log_lpmf(y[t] | X[t, ] * lambda[, j] + eta[conflict, j], phi));
+                                              neg_binomial_2_log_lpmf(y[t] | eta[conflict, j], phi));
             }
         }
     }
@@ -64,12 +62,10 @@ transformed parameters {
 
 model {
     // Priors
-    target += dirichlet_lpdf(pi | pi_alpha);
+    target += dirichlet_lpdf(pi | rep_vector(1, K));
     target += gamma_lpdf(phi | 2, 0.1);
     for (i in 1:K)
         target += std_normal_lpdf(to_vector(beta[i]));
-
-    target += std_normal_lpdf(to_vector(lambda));
 
     // Partially pooled transition intercepts
     target += student_t_lpdf(to_vector(nu) | 3, 0, 1);
