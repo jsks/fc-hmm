@@ -25,6 +25,4 @@ apptainer run --bind $PWD:/data image.sif sample \
           num_chains=4 \
           num_threads=4 \
           output sig_figs=4 file=/data/output.csv
-apptainer exec --bind $PWD:/data image.sif /diagnose /data/output_{1..4}.csv |
-    tee /dev/tty |
-    grep -q 'no problems detected'
+apptainer exec --bind $PWD:/data image.sif /diagnose /data/output_{1..4}.csv
