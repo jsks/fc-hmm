@@ -12,7 +12,7 @@
 FROM debian:12 AS cmdstan
 
 ARG CMDSTAN_VERSION="2.35.0"
-ARG MODEL="simple"
+ARG MODEL
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -37,7 +37,7 @@ RUN STANCFLAGS="--include-paths /cmdstan" make -j$(nproc) bin/diagnose hmm sbc &
 # Simulation based calibration image
 FROM gcr.io/distroless/cc-debian12 AS sbc
 
-ARG MODEL="simple"
+ARG MODEL
 
 # This is unnecessary for the image, but it's nice to know exactly
 # which model code was run.
@@ -53,8 +53,8 @@ ENTRYPOINT ["/sbc", "data", "file=/sbc.json", "sample"]
 # Hidden markov model image
 FROM gcr.io/distroless/cc-debian12 AS hmm
 
-ARG MODEL="simple"
-ARG DATA="data/hmm-simple-k3.json"
+ARG MODEL
+ARG DATA
 
 COPY stan/${MODEL}/*.stan .
 
