@@ -31,8 +31,8 @@ EOF
 exit
 }
 
-typeset -A opts=(--samples 1000 --warmup 1000)
-zparseopts -A opts -D -E -F -K -M -- -help h=-help -sync-only \
+typeset -A opts=(--samples 2000 --warmup 1000)
+zparseopts -A opts -D -E -F -K -M -- -local l=-local -help h=-help -sync-only \
             -samples: s:=-samples -warmup: w:=-warmup || { usage >&2; exit 127 }
 
 [[ -v opts[--help] ]] && help
@@ -42,6 +42,7 @@ if [[ -z $1 ]]; then
     exit 127
 fi
 
+image=ghcr.io/jsks/fc-hmm/$1
 hash=$(date +'%s' | md5sum | cut -c1-5)
 proj="storage/$hash-${1:t}-$(date +'%y-%m-%d-%H.%M.%S')"
 if [[ "$1" =~ -sbc$ ]]; then
@@ -54,8 +55,8 @@ print "Model directory: $proj"
 
 [[ ! -f scripts/slurm/$job_script ]] && error "Cannot find job submission file for $1"
 
-id=$(podman images -q $1)
-[[ -z $id ]] && error "Cannot find image $1"
+id=$(podman images -q $image)
+[[ -z $id ]] && error "Cannot find image $image"
 
 ssh tetralith "mkdir -p $proj"
 scp scripts/slurm/${job_script} tetralith:$proj/$job_script
@@ -73,7 +74,7 @@ sed -E -e "s/(num_warmup=)[[:digit:]]+/\1${opts[--warmup]}/" \
 EOF
 fi
 
-podman save $1 | gzip | ssh tetralith "cat > $proj/${1:t}-$id.tar.gz"
+podman save $image | gzip | ssh tetralith "cat > $proj/${1:t}-$id.tar.gz"
 
 # Note: apparently apptainer doesn't like tilde expansion...
 ssh tetralith "apptainer build $proj/image.sif docker-archive:$proj/${1:t}-$id.tar.gz"

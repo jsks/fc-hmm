@@ -50,12 +50,11 @@ print "SBC data: ${sbc:=data/sbc.json}"
 
 ###
 # Build and run the data clean/merge pipeline
-podman build -t fc.hmm/pipeline --target=pipeline -f podman/r-image $root
-podman run --rm -v $root/data:/proj/data fc.hmm/pipeline \
-       ./pipeline.sh -x $opts[--variable] -k $opts[--states] $data
+podman run --rm -v $root:/proj ghcr.io/jsks/fc-hmm/r-image \
+       scripts/pipeline.sh -x $opts[--variable] -k $opts[--states] $data
 
 ###
 # Build model/sbc images
-podman build -t fc.hmm/$1-k${opts[--states]} --target=hmm --build-arg=MODEL=$1 \
+podman build -t ghcr.io/jsks/fc-hmm/$1-k${opts[--states]} --target=hmm --build-arg=MODEL=$1 \
        --build-arg=DATA=$data -f podman/hmm $root
-podman build -t fc.hmm/$1-sbc --target=sbc --build-arg=MODEL=$1 -f podman/hmm $root
+podman build -t ghcr.io/jsks/fc-hmm/$1-sbc --target=sbc --build-arg=MODEL=$1 -f podman/hmm $root
