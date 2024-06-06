@@ -49,12 +49,12 @@ conflicts <- mutate(df, row = row_number()) |>
               end = last(row))
 
 # BRD mean log-scale priors
-if (arguments$state == 3) {
+if (arguments$states == 3) {
     mu_location <- c(log(1), log(50), log(1000))
-    mu_scale <- c(1, 0.7, 0.7)
+    mu_scale <- c(2, 0.5, 0.25)
 } else {
     mu_location <- c(log(1), log(500))
-    mu_scale <- c(1, 0.7)
+    mu_scale <- c(2, 0.5)
 }
 
 ###
@@ -82,6 +82,6 @@ stopifnot(data$K == length(data$mu_location),
 
 info("Variables: %s", paste0(colnames(X), collapse = ", "))
 info("N = %d, K = %d", data$N, data$K)
-info("BRD prior (location = %.2f, scale = %.2f)", exp(data$mu_location), data$mu_scale)
+info("BRD prior (exp(location) = %.2f, scale = %.2f)", exp(data$mu_location), data$mu_scale)
 
 write_json(data, arguments$output, auto_unbox = T)
