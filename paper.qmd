@@ -10,15 +10,6 @@ date: today
 date-format: long
 bibliography: library.bib
 linestretch: 1.25
-format:
-    pdf:
-      fontsize: 11pt
-      papersize: A4
-      include-in-header:
-          - text: |
-              \usepackage{graphicx}
-              \usepackage{tikz}
-      pdf-engine: lualatex
 execute:
     cache: true
     echo: false
@@ -26,38 +17,38 @@ execute:
 
 # Introduction
 
-Civil conflicts are dynamics processes that may underfo several waves of escalation and de-escalation in intensity as the conflict oscillates between active and inactive phases of combat.
+A civil conflict is a dynamic process that may undergo waves of escalation and de-escalation in intensity reflecting in part actors' changing goals, strategies, and capabilities as well as external factors such as combat conditions and the actions of third party actors. These patterns of escalation and de-escalation can lead to distinct phases in a conflict's trajectory, including periods of heightened violence and prolonged frozen states whereby active fighting subsides but the underlying core issue(s) remains unresolved with an ever-present threat of renewed violence. The volatility in the possible transitions between these phases can vary greatly --- some conflicts remain at a high intensity throughout their lifespan whilst others will oscillate between being active and frozen, or simply lay dormant in a frozen state without a conclusive termination.
 
-Identifying these periods is a crucial first step towards examining why certain conflicts become frozen
+Understanding why certain civil conflicts transition in and out of different conflict states is crucial for studying the dynamics of frozen conflicts. For example, as researchers, we may wish to ask why do certain conflicts become frozen? Or, why and when do some frozen conflicts re-escalate back into renewed, high intensity violence? Addressing these questions requires as a first step empirically differentiating conflict states. Previous approaches to identifying when conflicts become frozen adopt the standard approach in conflict research delineating onset, duration, and termination by observing increases/decreases in battle related fatalities above/below pre-specified thresholds. This is a deterministic procedure that does not easily capture the epistemic uncertainty inherit to labeling cases. Furthermore, any such threshold is fairly arbitrary. Whether 25, 500, or 1000 fatalities is selected as the cutoff can have significant consequences for how we operationalize peace and conflict, active and frozen conflict, and low-intensity and high-intensity violence.
 
-Civil conflict as a dynaic process with several wabes of escalation and de-escalation
+In this article I take an alternative approach to the measurement of civil conflict
+dynamics that treats the state of a conflict as a latent variable. To this end, I propose a bayesian hidden markov model (HMM) framework to probabilistically infer the transitions between frozen and active states in civil conflicts. An HMM
 
-  - How/why conflicts transition in and out of states of being frozen
-    is still underexplored by researchers
+"This paper introduces a Bayesian Hidden Markov Model framework to probabilistically infer the transitions between frozen and active phases in civil conflicts, offering a dynamic and flexible approach to measuring conflict intensity over time. Using international arms transfers as a case study, we demonstrate how external interventions influence the state transition probabilities of civil wars, providing new insights into the escalation and de-escalation dynamics that traditional hand-coded methods may overlook."
 
-"Why and when do some frozen conflicts re-escalate back into active conflicts?"
+HMMs provide a probabilistic approach to capture the temporal shifts in conflict intensity and to estimate the underlying processes driving these transitions.
 
-  - To be able to answer these questions we need to be able to
-    identify patterns of escalation and de-escalation
-
-In this article I propose a latent variable approach that treats the state of a conflict at a given time period as an unobserved variable
+HMMs are a form of unsupervised learning, which probabilistic label observations according to observed emissions
 
   - Evolves as a discrete markov process whose transition
     probabilities between frozen and active states is a time varying
     function of a set of covariates.
 
-"By incorporating time varying covariates and hierarchical structures, the model captures the complex dynamics of conflict escalation and de-escalation, accounting for both short-term fluctuations and long-term trends."
-
-This stands in direct contrast to the standard approach of coding frozen conflicts, and distinguishing between high and low intensity conflicts more broadly. Namely by identifying drops in battle related fatalities below pre-specified threshold.
+(next, benefits of HMMs)
 
   - Move away from arbitrary thresholds towards probabilistic
     inference of state labels that incorporate uncertainty.
   - At a cost of computational complexity
 
-HMMs provide a probabilistic approach to capture the temporal shifts in conflict intensity and to estimate the underlying processes driving these transitions.
+Move away from labeling entire conflicts as simply frozen or not, instead it is a state that can be transitioned in and out of
+
+"By incorporating time varying covariates and hierarchical structures, the model captures the complex dynamics of conflict escalation and de-escalation, accounting for both short-term fluctuations and long-term trends."
+
+(international arms trade case example)
+
+(summary --- conclusion)
 
 Better our understanding of both frozen conflicts, and conflict dynamics more generally
-
 
 # Existing Measures of Frozen Conflicts
 
@@ -67,7 +58,60 @@ Better our understanding of both frozen conflicts, and conflict dynamics more ge
 
 ## Model Specification
 
+Discrete, finite state HMM featuring an ergodic, aperiodic latent markov chain with an inhomogenous or time varying transition matrix.
+
+The joint distribution for the latent state sequence and observed emissions can be found via recursion.
+
+$$
+p(\boldsymbol{y}, \boldsymbol{z}) = p(z_1) p(y_1 | z_1) \prod_{t=1}^T p(y_t | z_t) p(z_t | z_{t-1})
+$$
+
+Finish with the marginalized posterior
+
+\[ g_{j \to k}(\theta, \boldsymbol{X}^\star) = \frac{1}{N} \sum_{i=1}^N \frac{1}{T_i - 1} \sum_{t=2}^{T_i} P(S_t^{(i)} = k | S_{t-1}^{(i)} = j, X_t^{\star(i)}, \theta) \]
+
+where $\boldsymbol{X}^{\star(i)} = [c, X_2^{(i)}, \ldots, X_D^{(i)} ]$ for $c \in [0, \max_{i \in \{1, \ldots, N \}} X_1^{(i)}]$
+
+For a fixed $\boldsymbol{X}^\star$, the push-forward distribution is approximated via monte carlo integration with draws from the posterior.
+
+\[ p(g_{j \to k}(\theta, \boldsymbol{X}^\star) | \boldsymbol{y}, \boldsymbol{X}) \approx \{ g_{j \to k}(\theta^{(m)}, \boldsymbol{X}^\star) : \theta^{(m)} \sim p(\theta | \boldsymbol{y}, \boldsymbol{X}) \} \]
+
 ## Estimation
+
+Eq. (??) can be estimated using Hamiltonian Monte Carlo (HMC) [^alternatives]
+
+[^alternatives]: There are a number of alternative approaches for full bayesian inference.
+
+Typically we marginalize the joint likelihood (usually because of estimation procedure, ex Baum-Welch) --- Also HMC assumes continuous parameter space
+
+- dimensionality reduction
+- computatonal complexity
+
+$$
+p(\boldsymbol{y} | \theta) = \sum_K \alpha_T(k)
+$$
+
+Big O complexity => forward pass -- Rabiner (a tutorial on hidden markov models...)
+
+generate posterior predictions for latent states by combining forward probabilities with backward pass [^viterbi]
+
+[^viterbi]: Alternatively, we can use the viterbi algorithm to find
+    the most likely sequence, $P(Z_1, \ldots, Z_T | Y_1, \ldots, Y_T,
+    \theta)$, as opposed to the marginal probability $P(Z_t = k | Y_1,
+    \ldots, Y_T, \theta)$.
+
+thu---
+
+Typically we work with the marginalized likelihood either because explicitly required by estimation procedure (Baum-Welch, HMC)
+
+- computational benefit, reduced dimensionality
+
+Forward pass --- Rabiner (A tutorial on hidden markov models) for inference
+
+We can generate estimates for the latent states by combining the forward probabilities with a backward pass[^viterbi] --- calculates marginal probabilities
+
+[^viterbi]: Alternatively, we could use the viterbi algorithm to calculate the most likely latent sequence, ie the sequence that maximizes the joint probability  $P(S_1, \ldots, S_T | y_1, \ldots, y_T, \theta)$, versus the marginal probabilitiy from the forward-backward algorithm ($p(S_t = k | y_1, \ldots, y_T, \theta)$)
+
 
 # Applied Example: Arms Transfers and Conflict Phases
 
@@ -105,6 +149,7 @@ Shortcomings:
   to re-escalate a conflict --- no distinction between a weakened
   insurgency versus a de facto separatist state (DOES NOT MEASURE REBEL CAPACITY)
 - Excluded low intensity conflicts
+- Doesn't model termination
 
 Future work:
 - incorporate more battlefield dynamics, including distance to pop. centers, proportion of calendar year with violent events etc etc.
