@@ -38,10 +38,10 @@ for (i in 1:data$K) {
     for (j in 1:data$K) {
         info("Saving %d -> %d", i, j)
         m <- lapply(probs, \(p) p[j, ]) |> do.call(rbind, args = _)
-        saveRDS(m, sprintf("posteriors/transitions/prob_%d%d.rds", i, j))
+
+        sprintf("%s/prob_%d%d.rds", arguments$model_run, i, j) |>
+            saveRDS(m, file = _)
     }
 }
 
-transitions <- data.frame(tiv = newdata, normalized = v)
-file.path(model_run, "transitions.rds") |>
-    saveRDS(transitions, file = _)
+data.frame(tiv = newdata, normalized = v) |> saveRDS("posteriors/tiv.rds")
