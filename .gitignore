@@ -11,6 +11,8 @@ renv/*
 stan/*
 !stan/simple
 
+local.R
+
 .\#*
 .Rhistory
 *.o
