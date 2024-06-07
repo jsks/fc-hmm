@@ -62,8 +62,8 @@ posterior_transitions.CmdStanFit <- function(fit,
 
     beta.ll <- lapply(1:ndraws, \(m) matrix(beta[m, ], K, D))
     zeta.ll <- lapply(1:ndraws, function(m) {
-        z <- matrix(0, nrow(X), 3)
-        for (i in 1:3) {
+        z <- matrix(0, nrow(X), K)
+        for (i in 1:K) {
             cols <- sprintf("zeta[%d,%d,%d]", unit_id, from, i)
             z[, i] <- zeta[m, cols]
         }
