@@ -8,8 +8,9 @@ renv/*
 !renv/activate.R
 !renv/settings.json
 *.Rcheck/
-stan/*
-!stan/simple
+stan/**/*
+!stan/*/
+!stan/**/*.stan
 
 local.R
 
