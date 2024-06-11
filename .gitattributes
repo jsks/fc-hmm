@@ -1,1 +1,3 @@
 library.bib linguist-vendored
+podman/r-image linguist-language=containerfile
+podman/hmm linguist-language=containerfile
