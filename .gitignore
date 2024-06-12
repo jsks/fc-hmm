@@ -25,6 +25,8 @@ local.R
 *.docx
 *.org
 *.pdf
+*.tex
+*.typ
 
 *.RData
 *.rda
@@ -35,3 +37,5 @@ local.R
 *.tar.gz
 *.zip
 *.zst
+
+/.quarto/
